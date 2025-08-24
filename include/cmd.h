@@ -26,12 +26,12 @@ void enable_raw_mode();
 
 cursor_pos query_cursor_pos();
 
-void set_cursor_position(cursor_pos position);
+std::string set_cursor_position(cursor_pos position);
 
-void redraw_line(std::string_view prompt, std::string_view line);
+std::string redraw_line(std::string_view prompt, std::string_view line);
 
-void move_cursor_right();
+std::string move_cursor_right();
 
-void move_cursor_left();
+std::string move_cursor_left();
 
 std::string sh_read_line(std::string_view prompt);

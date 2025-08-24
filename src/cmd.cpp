@@ -63,25 +63,27 @@ cursor_pos query_cursor_pos() {
     throw std::runtime_error("Failed to read cursor position: " + std::string(buf));
 }
 
-void set_cursor_position(cursor_pos position) {
-    std::string cup_sequnce = "\x1b[" + std::to_string(position.row) + ";" + std::to_string(position.col) + "H";
-    write(STDIN_FILENO, cup_sequnce.c_str(), cup_sequnce.size());
+[[nodiscard ]]
+std::string set_cursor_position(cursor_pos position) {
     current_cursor = position;
+    return "\x1b[" + std::to_string(position.row) + ";" + std::to_string(position.col) + "H";
 }
 
-void redraw_line(std::string_view prompt, std::string_view line) {
-    std::string cup_sequnce = "\x1b[2K\x1b[" + std::to_string(current_cursor.row) + ";0H";
-    write(STDIN_FILENO, cup_sequnce.c_str(), cup_sequnce.size());
-    std::cout << prompt << line << std::flush;
-    set_cursor_position({current_cursor.row, current_cursor.col});
+[[nodiscard ]]
+std::string redraw_line(std::string_view prompt, std::string_view line) {
+    return "\x1b[2K\x1b[" + std::to_string(current_cursor.row) + ";0H" +
+            std::string(prompt) + std::string(line)
+            + set_cursor_position({current_cursor.row, current_cursor.col});
 }
 
-void move_cursor_right() {
-    set_cursor_position({current_cursor.row, current_cursor.col + 1});
+[[nodiscard ]]
+inline std::string move_cursor_right() {
+    return set_cursor_position({current_cursor.row, current_cursor.col + 1});
 }
 
-void move_cursor_left() {
-    set_cursor_position({current_cursor.row, current_cursor.col - 1});
+[[nodiscard ]]
+inline std::string move_cursor_left() {
+    return set_cursor_position({current_cursor.row, current_cursor.col - 1});
 }
 
 std::string sh_read_line(std::string_view prompt) {
@@ -92,41 +94,42 @@ std::string sh_read_line(std::string_view prompt) {
     std::string line_state;
     char c;
     while (read(STDIN_FILENO, &c, 1) == 1 && c != ENTER) {
+        std::string buffer;
         if (iscntrl(c)) {
             //TODO: move all of this into a map
             switch (c) {
                 case CTRL_U: {
-                    write(STDIN_FILENO, "\x1b[1K", 4);
                     line_state.erase(0, current_cursor.col - line_start);
-                    set_cursor_position({current_cursor.row, line_start});
-                    redraw_line(prompt, line_state);
+                    buffer += "\x1b[1K";
+                    buffer += set_cursor_position({current_cursor.row, line_start});
+                    buffer += redraw_line(prompt, line_state);
                     break;
                 }
                 case CTRL_K: {
                     if (line_state.size() + line_start >= current_cursor.col) {
                         line_state.erase(current_cursor.col - line_start);
-                        write(STDIN_FILENO, "\x1b[K", 3);
+                        buffer += "\x1b[K";
                     }
                     break;
                 }
                 case CTRL_A: {
-                    set_cursor_position({current_cursor.row, line_start});
+                    buffer += set_cursor_position({current_cursor.row, line_start});
                     break;
                 }
                 case CTRL_E: {
-                    set_cursor_position({current_cursor.row, static_cast<int>(line_state.size()) + line_start});
+                    buffer += set_cursor_position({current_cursor.row, static_cast<int>(line_state.size()) + line_start});
                     break;
                 }
                 case BACKSPACE:
                 case CTRL_H: {
-                    if (!line_state.empty()) {
-                        if (current_cursor.col > line_start && current_cursor.col < line_state.size() + line_start) {
-                            line_state.erase(current_cursor.col - 1, 1);
+                    if (!line_state.empty() && current_cursor.col > line_start) {
+                        if (current_cursor.col < line_state.size() + line_start) {
+                            line_state.erase(current_cursor.col - line_start, 1);
                         } else {
                             line_state.pop_back();
                         }
-                        move_cursor_left();
-                        redraw_line(prompt, line_state);
+                        buffer += move_cursor_left();
+                        buffer += redraw_line(prompt, line_state);
                     }
                     break;
                 }
@@ -139,24 +142,38 @@ std::string sh_read_line(std::string_view prompt) {
                         switch (c) {
                             case 'A': {
                                 current_cursor.row++;
+                                buffer += seq;
                                 break;
                             }
                             case 'B': {
                                 current_cursor.row--;
+                                buffer += seq;
                                 break;
                             }
                             case 'C': {
                                 current_cursor.col++;
+                                buffer += seq;
                                 break;
                             }
                             case 'D': {
-                                if (current_cursor.col > line_start)
+                                if (current_cursor.col > line_start) {
                                     current_cursor.col--;
+                                    buffer += seq;
+                                }
+                                break;
+                            }
+                            case '3': { // DEL keypress
+                                read(STDIN_FILENO, &c, 1);
+                                if (c == '~' && !line_state.empty() &&
+                                    current_cursor.col > line_start &&
+                                    current_cursor.col < line_state.size() + line_start)
+                                {
+                                    line_state.erase(current_cursor.col - line_start, 1);
+                                    buffer += redraw_line(prompt, line_state);
+                                }
                                 break;
                             }
                         }
-
-                        write(STDIN_FILENO, &seq, 3);
                     }
                     break;
                 }
@@ -167,9 +184,10 @@ std::string sh_read_line(std::string_view prompt) {
             } else {
                 line_state += c;
             }
-            redraw_line(prompt, line_state);
-            move_cursor_right();
+            buffer += redraw_line(prompt, line_state);
+            buffer += move_cursor_right();
         }
+        write(STDIN_FILENO, buffer.c_str(), buffer.size());
     }
     disable_raw_mode();
     return line_state;
