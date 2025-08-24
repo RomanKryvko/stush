@@ -38,10 +38,9 @@ int sh_execute(std::vector<std::string> args) {
 
 int sh_main_loop(int argc, const char** argv) {
     char delimeter = ' ';
+    std::string prompt = ">>> ";
     while (true) {
-        // TODO: make prompt variable
-        // std::cout << "> ";
-        std::string line = sh_read_line();
+        std::string line = sh_read_line(prompt);
         if (line.empty())
             continue;
         std::vector<std::string> args = sh_tokenize(line, delimeter);

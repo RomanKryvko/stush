@@ -28,10 +28,10 @@ cursor_pos query_cursor_pos();
 
 void set_cursor_position(cursor_pos position);
 
-void redraw_line(std::string_view line);
+void redraw_line(std::string_view prompt, std::string_view line);
 
 void move_cursor_right();
 
 void move_cursor_left();
 
-std::string sh_read_line();
+std::string sh_read_line(std::string_view prompt);
