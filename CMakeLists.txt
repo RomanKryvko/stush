@@ -8,6 +8,7 @@ target_include_directories(stush PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 target_sources(stush PRIVATE
     src/main.cpp
     src/parser.cpp
+    src/cmd.cpp
 )
 
 include(FetchContent)
