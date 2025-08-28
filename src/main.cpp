@@ -12,7 +12,7 @@
 #include <cmd.h>
 
 //NOTE: we have to use std::string because exec expects a null-terminated string
-int sh_execute(std::vector<std::string> args) {
+int sh_execute(const std::vector<std::string>& args) {
     const char* args_c [args.size() + 1];
     for (int i = 0; i < args.size(); i++) {
         args_c[i] = args[i].c_str();

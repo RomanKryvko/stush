@@ -93,6 +93,10 @@ inline std::string move_cursor_left() {
     return set_cursor_position({current_cursor.row, current_cursor.col - 1});
 }
 
+int full_line_length() {
+    return line_state.size() + line_start;
+}
+
 void go_to_line_start() {
     buffer += set_cursor_position({current_cursor.row, line_start});
 }
@@ -109,7 +113,7 @@ void erase_to_beginning() {
 }
 
 void erase_to_end() {
-    if (line_state.size() + line_start >= current_cursor.col) {
+    if (full_line_length() >= current_cursor.col) {
         line_state.erase(current_cursor.col - line_start);
         buffer += "\x1b[K";
     }
@@ -118,7 +122,7 @@ void erase_to_end() {
 void erase_forward() {
     if (!line_state.empty() &&
         current_cursor.col > line_start &&
-        current_cursor.col < line_state.size() + line_start)
+        current_cursor.col < full_line_length())
     {
         line_state.erase(current_cursor.col - line_start, 1);
         buffer += redraw_line(_prompt, line_state);
@@ -127,7 +131,7 @@ void erase_forward() {
 
 void erase_backwards() {
     if (!line_state.empty() && current_cursor.col > line_start) {
-        if (current_cursor.col < line_state.size() + line_start) {
+        if (current_cursor.col < full_line_length()) {
             line_state.erase(current_cursor.col - line_start, 1);
         } else {
             line_state.pop_back();
@@ -138,23 +142,31 @@ void erase_backwards() {
 }
 
 void cursor_up() {
-    current_cursor.row++;
-    buffer += "\x1b[A";
+    // Do nothing.
+    // current_cursor.row++;
+    // buffer += "\x1b[A";
+    // TODO: implement history lookup here
 }
 
 void cursor_down() {
-    current_cursor.row--;
-    buffer += "\x1b[B";
+    // Do nothing.
+    // current_cursor.row--;
+    // buffer += "\x1b[B";
+    // TODO: implement history lookup here
 }
 
 void cursor_right() {
-    current_cursor.col++;
-    buffer += "\x1b[C";
+    if (current_cursor.col < full_line_length()) {
+        current_cursor.col++;
+        buffer += "\x1b[C";
+    }
 }
 
 void cursor_left() {
-    current_cursor.col--;
-    buffer += "\x1b[D";
+    if (current_cursor.col > line_start) {
+        current_cursor.col--;
+        buffer += "\x1b[D";
+    }
 }
 
 std::unordered_map<key_code_t, command_t> command_map {
@@ -189,7 +201,7 @@ void handle_control(key_code_t key) {
 }
 
 void handle_normal(key_code_t key) {
-    if (current_cursor.col < line_state.size() + line_start) {
+    if (current_cursor.col < full_line_length()) {
         line_state.insert(current_cursor.col - line_start, 1, key);
     } else {
         line_state += key;
@@ -199,8 +211,10 @@ void handle_normal(key_code_t key) {
 }
 
 void commit_changes() {
-    write(STDIN_FILENO, buffer.c_str(), buffer.size());
-    buffer.clear();
+    if (!buffer.empty()) {
+        write(STDIN_FILENO, buffer.c_str(), buffer.size());
+        buffer.clear();
+    }
 }
 
 std::string sh_read_line(std::string_view prompt, char terminator) {
@@ -214,6 +228,7 @@ std::string sh_read_line(std::string_view prompt, char terminator) {
             handle_normal(key);
         }
         commit_changes();
+        key = 0;
     }
     disable_raw_mode();
     return line_state;
