@@ -14,5 +14,14 @@ target_link_libraries(
     GTest::gtest_main
 )
 
+add_executable(byteutils_test byteutils_test.cpp)
+target_include_directories(byteutils_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+
+target_link_libraries(
+    byteutils_test
+    GTest::gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(parser_test)
+gtest_discover_tests(byteutils_test)

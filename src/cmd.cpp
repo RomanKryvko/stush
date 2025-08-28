@@ -1,6 +1,5 @@
-#include <array>
 #include <cmd.h>
-#include <cstdint>
+#include <byteutils.h>
 #include <parser.h>
 #include <cassert>
 #include <cstdio>
@@ -94,19 +93,6 @@ inline std::string move_cursor_left() {
     return set_cursor_position({current_cursor.row, current_cursor.col - 1});
 }
 
-constexpr key_code_t pack4(uint8_t a, uint8_t b, uint8_t c, uint8_t d) { //TODO: add variadic version
-    return (a << 24) | (b << 16) | (c << 8) | d;
-}
-
-constexpr std::array<key_code_t, 4> unpack4(key_code_t code) { //TODO: add variadic version
-    return {
-        (uint8_t)((code >> 24) & 0xFF),
-        (uint8_t)((code >> 16) & 0xFF),
-        (uint8_t)((code >> 8) & 0xFF),
-        (uint8_t)(code & 0xFF)
-    };
-}
-
 void go_to_line_start() {
     buffer += set_cursor_position({current_cursor.row, line_start});
 }
@@ -172,17 +158,17 @@ void cursor_left() {
 }
 
 std::unordered_map<key_code_t, command_t> command_map {
-    {pack4(0, 0, 0, CTRL_A), go_to_line_start},
-    {pack4(0, 0, 0, CTRL_E), go_to_line_end},
-    {pack4(0, 0, 0, CTRL_U), erase_to_beginning},
-    {pack4(0, 0, 0, CTRL_K), erase_to_end},
-    {pack4(0, 0, 0, CTRL_H), erase_backwards},
-    {pack4(0, 0, 0, BACKSPACE), erase_backwards},
-    {pack4(0x7e, 0x33, 0x5b, 0x1b), erase_forward},
-    {pack4(0, 0x41, 0x5b, 0x1b), cursor_up},
-    {pack4(0, 0x42, 0x5b, 0x1b), cursor_down},
-    {pack4(0, 0x43, 0x5b, 0x1b), cursor_right},
-    {pack4(0, 0x44, 0x5b, 0x1b), cursor_left},
+    {packn<key_code_t>(0, 0, 0, CTRL_A), go_to_line_start},
+    {packn<key_code_t>(0, 0, 0, CTRL_E), go_to_line_end},
+    {packn<key_code_t>(0, 0, 0, CTRL_U), erase_to_beginning},
+    {packn<key_code_t>(0, 0, 0, CTRL_K), erase_to_end},
+    {packn<key_code_t>(0, 0, 0, CTRL_H), erase_backwards},
+    {packn<key_code_t>(0, 0, 0, BACKSPACE), erase_backwards},
+    {packn<key_code_t>(0x7e, 0x33, 0x5b, 0x1b), erase_forward},
+    {packn<key_code_t>(0, 0x41, 0x5b, 0x1b), cursor_up},
+    {packn<key_code_t>(0, 0x42, 0x5b, 0x1b), cursor_down},
+    {packn<key_code_t>(0, 0x43, 0x5b, 0x1b), cursor_right},
+    {packn<key_code_t>(0, 0x44, 0x5b, 0x1b), cursor_left},
 };
 
 void init_readline(std::string_view prompt) {
