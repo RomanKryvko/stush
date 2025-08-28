@@ -94,9 +94,6 @@ inline std::string move_cursor_left() {
     return set_cursor_position({current_cursor.row, current_cursor.col - 1});
 }
 
-using key_code_t = int32_t;
-using command_t = void(*)(void);
-
 constexpr key_code_t pack4(uint8_t a, uint8_t b, uint8_t c, uint8_t d) { //TODO: add variadic version
     return (a << 24) | (b << 16) | (c << 8) | d;
 }
@@ -188,33 +185,49 @@ std::unordered_map<key_code_t, command_t> command_map {
     {pack4(0, 0x44, 0x5b, 0x1b), cursor_left},
 };
 
-std::string sh_read_line(std::string_view prompt) {
+void init_readline(std::string_view prompt) {
     line_state.clear();
     _prompt = prompt;
     enable_raw_mode();
     line_start = _prompt.size() + 1;
     std::cout << "\r\n" << _prompt << std::flush;
     current_cursor = query_cursor_pos();
-    key_code_t c {};
-    while (read(STDIN_FILENO, &c, sizeof c) != -1 && c != ENTER) {
-        char lastchar = c & 0xFF;
+}
+
+void handle_control(key_code_t key) {
+    try {
+        command_map.at(key)();
+    } catch (const std::out_of_range& e) {
+        // Not implemented. Do nothing?
+    }
+}
+
+void handle_normal(key_code_t key) {
+    if (current_cursor.col < line_state.size() + line_start) {
+        line_state.insert(current_cursor.col - line_start, 1, key);
+    } else {
+        line_state += key;
+    }
+    buffer += redraw_line(_prompt, line_state);
+    buffer += move_cursor_right();
+}
+
+void commit_changes() {
+    write(STDIN_FILENO, buffer.c_str(), buffer.size());
+    buffer.clear();
+}
+
+std::string sh_read_line(std::string_view prompt, char terminator) {
+    init_readline(prompt);
+    key_code_t key {};
+    while (read(STDIN_FILENO, &key, sizeof key) != -1 && key != terminator) {
+        char lastchar = key & 0xFF;
         if (iscntrl(lastchar)) {
-            try {
-                command_map.at(c)();
-            } catch (const std::out_of_range& e) {
-                // Not implemented. Do nothing?
-            }
+            handle_control(key);
         } else {
-            if (current_cursor.col < line_state.size() + line_start) {
-                line_state.insert(current_cursor.col - line_start, 1, c);
-            } else {
-                line_state += c;
-            }
-            buffer += redraw_line(_prompt, line_state);
-            buffer += move_cursor_right();
+            handle_normal(key);
         }
-        write(STDIN_FILENO, buffer.c_str(), buffer.size());
-        buffer.clear();
+        commit_changes();
     }
     disable_raw_mode();
     return line_state;

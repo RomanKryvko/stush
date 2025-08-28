@@ -11,6 +11,9 @@ struct cursor_pos {
     int col {};
 };
 
+using key_code_t = int32_t;
+using command_t = void(*)(void);
+
 const char CTRL_A = CTRL('a');
 const char CTRL_E = CTRL('e');
 const char CTRL_U = CTRL('u');
@@ -34,4 +37,4 @@ std::string move_cursor_right();
 
 std::string move_cursor_left();
 
-std::string sh_read_line(std::string_view prompt);
+std::string sh_read_line(std::string_view prompt, char terminator = ENTER);
