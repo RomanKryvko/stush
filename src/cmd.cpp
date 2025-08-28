@@ -1,4 +1,6 @@
+#include <array>
 #include <cmd.h>
+#include <cstdint>
 #include <parser.h>
 #include <cassert>
 #include <cstdio>
@@ -8,7 +10,9 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <sys/types.h>
 #include <unistd.h>
+#include <unordered_map>
 #include <wait.h>
 #include <termios.h>
 
@@ -38,6 +42,10 @@ cursor_pos current_cursor {};
 // starting column position
 int line_start = 1;
 
+std::string buffer {};
+std::string line_state {};
+std::string _prompt {};
+
 cursor_pos query_cursor_pos() {
     write(STDOUT_FILENO, "\x1b[6n", 4);
 
@@ -63,120 +71,138 @@ cursor_pos query_cursor_pos() {
     throw std::runtime_error("Failed to read cursor position: " + std::string(buf));
 }
 
-[[nodiscard ]]
+[[nodiscard]]
 std::string set_cursor_position(cursor_pos position) {
     current_cursor = position;
     return "\x1b[" + std::to_string(position.row) + ";" + std::to_string(position.col) + "H";
 }
 
-[[nodiscard ]]
+[[nodiscard]]
 std::string redraw_line(std::string_view prompt, std::string_view line) {
     return "\x1b[2K\x1b[" + std::to_string(current_cursor.row) + ";0H" +
             std::string(prompt) + std::string(line)
             + set_cursor_position({current_cursor.row, current_cursor.col});
 }
 
-[[nodiscard ]]
+[[nodiscard]]
 inline std::string move_cursor_right() {
     return set_cursor_position({current_cursor.row, current_cursor.col + 1});
 }
 
-[[nodiscard ]]
+[[nodiscard]]
 inline std::string move_cursor_left() {
     return set_cursor_position({current_cursor.row, current_cursor.col - 1});
 }
 
+using key_code_t = int32_t;
+using command_t = void(*)(void);
+
+constexpr key_code_t pack4(uint8_t a, uint8_t b, uint8_t c, uint8_t d) { //TODO: add variadic version
+    return (a << 24) | (b << 16) | (c << 8) | d;
+}
+
+constexpr std::array<key_code_t, 4> unpack4(key_code_t code) { //TODO: add variadic version
+    return {
+        (uint8_t)((code >> 24) & 0xFF),
+        (uint8_t)((code >> 16) & 0xFF),
+        (uint8_t)((code >> 8) & 0xFF),
+        (uint8_t)(code & 0xFF)
+    };
+}
+
+void go_to_line_start() {
+    buffer += set_cursor_position({current_cursor.row, line_start});
+}
+
+void go_to_line_end() {
+    buffer += set_cursor_position({current_cursor.row, static_cast<int>(line_state.size()) + line_start});
+}
+
+void erase_to_beginning() {
+    line_state.erase(0, current_cursor.col - line_start);
+    buffer += "\x1b[1K";
+    buffer += set_cursor_position({current_cursor.row, line_start});
+    buffer += redraw_line(_prompt, line_state);
+}
+
+void erase_to_end() {
+    if (line_state.size() + line_start >= current_cursor.col) {
+        line_state.erase(current_cursor.col - line_start);
+        buffer += "\x1b[K";
+    }
+}
+
+void erase_forward() {
+    if (!line_state.empty() &&
+        current_cursor.col > line_start &&
+        current_cursor.col < line_state.size() + line_start)
+    {
+        line_state.erase(current_cursor.col - line_start, 1);
+        buffer += redraw_line(_prompt, line_state);
+    }
+}
+
+void erase_backwards() {
+    if (!line_state.empty() && current_cursor.col > line_start) {
+        if (current_cursor.col < line_state.size() + line_start) {
+            line_state.erase(current_cursor.col - line_start, 1);
+        } else {
+            line_state.pop_back();
+        }
+        buffer += move_cursor_left();
+        buffer += redraw_line(_prompt, line_state);
+    }
+}
+
+void cursor_up() {
+    current_cursor.row++;
+    buffer += "\x1b[A";
+}
+
+void cursor_down() {
+    current_cursor.row--;
+    buffer += "\x1b[B";
+}
+
+void cursor_right() {
+    current_cursor.col++;
+    buffer += "\x1b[C";
+}
+
+void cursor_left() {
+    current_cursor.col--;
+    buffer += "\x1b[D";
+}
+
+std::unordered_map<key_code_t, command_t> command_map {
+    {pack4(0, 0, 0, CTRL_A), go_to_line_start},
+    {pack4(0, 0, 0, CTRL_E), go_to_line_end},
+    {pack4(0, 0, 0, CTRL_U), erase_to_beginning},
+    {pack4(0, 0, 0, CTRL_K), erase_to_end},
+    {pack4(0, 0, 0, CTRL_H), erase_backwards},
+    {pack4(0, 0, 0, BACKSPACE), erase_backwards},
+    {pack4(0x7e, 0x33, 0x5b, 0x1b), erase_forward},
+    {pack4(0, 0x41, 0x5b, 0x1b), cursor_up},
+    {pack4(0, 0x42, 0x5b, 0x1b), cursor_down},
+    {pack4(0, 0x43, 0x5b, 0x1b), cursor_right},
+    {pack4(0, 0x44, 0x5b, 0x1b), cursor_left},
+};
+
 std::string sh_read_line(std::string_view prompt) {
+    line_state.clear();
+    _prompt = prompt;
     enable_raw_mode();
-    line_start = prompt.size() + 1;
-    std::cout << "\r\n" << prompt << std::flush;
+    line_start = _prompt.size() + 1;
+    std::cout << "\r\n" << _prompt << std::flush;
     current_cursor = query_cursor_pos();
-    std::string line_state;
-    char c;
-    while (read(STDIN_FILENO, &c, 1) == 1 && c != ENTER) {
-        std::string buffer;
-        if (iscntrl(c)) {
-            //TODO: move all of this into a map
-            switch (c) {
-                case CTRL_U: {
-                    line_state.erase(0, current_cursor.col - line_start);
-                    buffer += "\x1b[1K";
-                    buffer += set_cursor_position({current_cursor.row, line_start});
-                    buffer += redraw_line(prompt, line_state);
-                    break;
-                }
-                case CTRL_K: {
-                    if (line_state.size() + line_start >= current_cursor.col) {
-                        line_state.erase(current_cursor.col - line_start);
-                        buffer += "\x1b[K";
-                    }
-                    break;
-                }
-                case CTRL_A: {
-                    buffer += set_cursor_position({current_cursor.row, line_start});
-                    break;
-                }
-                case CTRL_E: {
-                    buffer += set_cursor_position({current_cursor.row, static_cast<int>(line_state.size()) + line_start});
-                    break;
-                }
-                case BACKSPACE:
-                case CTRL_H: {
-                    if (!line_state.empty() && current_cursor.col > line_start) {
-                        if (current_cursor.col < line_state.size() + line_start) {
-                            line_state.erase(current_cursor.col - line_start, 1);
-                        } else {
-                            line_state.pop_back();
-                        }
-                        buffer += move_cursor_left();
-                        buffer += redraw_line(prompt, line_state);
-                    }
-                    break;
-                }
-                case ESC: {
-                    read(STDIN_FILENO, &c, 1);
-                    //TODO: read the entire sequence and use sscanf here?
-                    if (c == '[') {
-                        read(STDIN_FILENO, &c, 1);
-                        char seq[3] {'\x1b', '[', c}; //TODO: handle CTRL+arrow
-                        switch (c) {
-                            case 'A': {
-                                current_cursor.row++;
-                                buffer += seq;
-                                break;
-                            }
-                            case 'B': {
-                                current_cursor.row--;
-                                buffer += seq;
-                                break;
-                            }
-                            case 'C': {
-                                current_cursor.col++;
-                                buffer += seq;
-                                break;
-                            }
-                            case 'D': {
-                                if (current_cursor.col > line_start) {
-                                    current_cursor.col--;
-                                    buffer += seq;
-                                }
-                                break;
-                            }
-                            case '3': { // DEL keypress
-                                read(STDIN_FILENO, &c, 1);
-                                if (c == '~' && !line_state.empty() &&
-                                    current_cursor.col > line_start &&
-                                    current_cursor.col < line_state.size() + line_start)
-                                {
-                                    line_state.erase(current_cursor.col - line_start, 1);
-                                    buffer += redraw_line(prompt, line_state);
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    break;
-                }
+    key_code_t c {};
+    while (read(STDIN_FILENO, &c, sizeof c) != -1 && c != ENTER) {
+        char lastchar = c & 0xFF;
+        if (iscntrl(lastchar)) {
+            try {
+                command_map.at(c)();
+            } catch (const std::out_of_range& e) {
+                // Not implemented. Do nothing?
             }
         } else {
             if (current_cursor.col < line_state.size() + line_start) {
@@ -184,10 +210,11 @@ std::string sh_read_line(std::string_view prompt) {
             } else {
                 line_state += c;
             }
-            buffer += redraw_line(prompt, line_state);
+            buffer += redraw_line(_prompt, line_state);
             buffer += move_cursor_right();
         }
         write(STDIN_FILENO, buffer.c_str(), buffer.size());
+        buffer.clear();
     }
     disable_raw_mode();
     return line_state;
