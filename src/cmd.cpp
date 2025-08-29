@@ -212,7 +212,7 @@ void handle_normal(key_code_t key) {
 
 void commit_changes() {
     if (!buffer.empty()) {
-        write(STDIN_FILENO, buffer.c_str(), buffer.size());
+        write(STDOUT_FILENO, buffer.c_str(), buffer.size());
         buffer.clear();
     }
 }
