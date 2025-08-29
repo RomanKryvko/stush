@@ -1,3 +1,4 @@
+#include "builtins/builtins.h"
 #include <parser.h>
 #include <cassert>
 #include <cstdio>
@@ -13,6 +14,10 @@
 
 //NOTE: we have to use std::string because exec expects a null-terminated string
 int sh_execute(const std::vector<std::string>& args) {
+    int builtin_status = exec_builtin(args);
+    if (builtin_status != BUILTIN_NOT_FOUND)
+        return builtin_status;
+
     const char* args_c [args.size() + 1];
     for (int i = 0; i < args.size(); i++) {
         args_c[i] = args[i].c_str();

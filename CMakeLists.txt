@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 set(CMAKE_CXX_STANDARD 20)
 
-project(stush VERSION 0.0.1)
+project(stush VERSION 0.1.0)
 add_executable(stush)
 
 target_include_directories(stush PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
@@ -10,6 +10,8 @@ target_sources(stush PRIVATE
     src/parser.cpp
     src/cmd.cpp
 )
+
+add_subdirectory(src/builtins)
 
 include(FetchContent)
 FetchContent_Declare(
