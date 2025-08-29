@@ -8,10 +8,10 @@ target_include_directories(stush PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 target_sources(stush PRIVATE
     src/main.cpp
     src/parser.cpp
-    src/cmd.cpp
 )
 
 add_subdirectory(src/builtins)
+add_subdirectory(src/linereader)
 
 include(FetchContent)
 FetchContent_Declare(

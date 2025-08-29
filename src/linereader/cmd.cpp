@@ -1,4 +1,4 @@
-#include <cmd.h>
+#include <linereader/cmd.h>
 #include <byteutils.h>
 #include <parser.h>
 #include <cassert>
