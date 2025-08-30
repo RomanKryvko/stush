@@ -80,7 +80,7 @@ bool LineBuffer::erase_to_end() {
 
 bool LineBuffer::erase_forward() {
     if (!buffer.empty() &&
-        cursor.col > _line_start &&
+        cursor.col >= _line_start &&
         cursor.col < full_line_length())
     {
         buffer.erase(cursor.col - _line_start, 1);

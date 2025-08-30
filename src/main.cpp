@@ -42,15 +42,16 @@ int sh_execute(const std::vector<std::string>& args) {
 }
 
 int sh_main_loop(int argc, const char** argv) {
-    char delimeter = ' ';
-    std::string prompt = ">>> ";
+    char delimeter {' '};
+    std::string prompt {">>> "};
+    LineReader linereader {};
     while (true) {
-        std::string line = sh_read_line(prompt);
+        std::string line {linereader.sh_read_line(prompt)};
         if (line.empty())
             continue;
-        std::vector<std::string> args = sh_tokenize(line, delimeter);
+        std::vector<std::string> args {sh_tokenize(line, delimeter)};
         std::cout << "\n";
-        int status = sh_execute(args);
+        int status {sh_execute(args)};
         std::cout << "\nProcess " << args[0] << " exited with code " << status << '\n';
     }
 }
