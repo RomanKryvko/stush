@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <wait.h>
 #include <termios.h>
-#include <linereader/cmd.h>
+#include <linereader/linereader.h>
 
 //NOTE: we have to use std::string because exec expects a null-terminated string
 int sh_execute(const std::vector<std::string>& args) {

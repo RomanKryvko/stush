@@ -1,6 +1,6 @@
 #include "linereader/linebuffer.h"
 #include "linereader/terminal.h"
-#include <linereader/cmd.h>
+#include <linereader/linereader.h>
 #include <byteutils.h>
 #include <parser.h>
 #include <cassert>

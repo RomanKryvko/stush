@@ -1,6 +1,6 @@
 #pragma once
 
-#include "linereader.h"
+#include "types.h"
 #include <string>
 
 class LineBuffer {

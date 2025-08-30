@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "linereader/linebuffer.h"
-#include "linereader/linereader.h"
+#include "linereader/types.h"
 
 TEST(LineBufferTest, cursorDoesntOvershootLine) {
     LineBuffer linebuffer {}; // buffer is empty initially
