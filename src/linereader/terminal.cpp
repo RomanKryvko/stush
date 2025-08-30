@@ -72,6 +72,10 @@ void Terminal::erase_to_line_start() {
     buffer += "\x1b[1K";
 }
 
+void Terminal::clear_to_screen_end() {
+    buffer += "\x1b[J";
+}
+
 void Terminal::write_text(std::string_view text) {
     buffer += text;
 }

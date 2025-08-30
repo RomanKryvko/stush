@@ -1,6 +1,6 @@
 #include "builtins/builtins.h"
 #include "builtins/cd.h"
-#include "unistd.h"
+#include "linereader/terminal.h"
 #include <cstdlib>
 #include <iostream>
 #include <sched.h>
@@ -27,14 +27,11 @@ int com_help(const std::vector<std::string>& args) {
 }
 
 int com_clear(const std::vector<std::string>& args) {
-    //TODO: write streamlined methods for handling escape sequences
-    constexpr std::string_view go_to_top_and_clear = "\x1b[1;1H\x1b[J";
-    const int nbytes = go_to_top_and_clear.size();
-
-    if (write(STDIN_FILENO, go_to_top_and_clear.data(), nbytes) == nbytes) {
-        return EXIT_SUCCESS;
-    }
-    return EXIT_FAILURE;
+    Terminal term {};
+    term.set_cursor_position({1, 1});
+    term.clear_to_screen_end();
+    term.commit();
+    return EXIT_SUCCESS;
 }
 
 int com_exit(const std::vector<std::string>& args) {

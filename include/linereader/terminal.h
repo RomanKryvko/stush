@@ -64,6 +64,8 @@ public:
     void erase_to_line_end();
     void erase_to_line_start();
 
+    void clear_to_screen_end();
+
     void write_text(std::string_view text);
     void commit();
 };
