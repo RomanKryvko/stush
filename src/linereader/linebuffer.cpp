@@ -1,18 +1,18 @@
 #include "linereader/linebuffer.h"
 
-int LineBuffer::full_line_length() const {
+inline int LineBuffer::full_line_length() const {
     return buffer.size() + _line_start;
 }
 
-size_t LineBuffer::idx_to_cursor() const {
+inline size_t LineBuffer::idx_to_cursor() const {
     return cursor.col + _line_start;
 }
 
-size_t LineBuffer::idx_to_cursor(int col) const {
+inline size_t LineBuffer::idx_to_cursor(int col) const {
     return col + _line_start;
 }
 
-size_t LineBuffer::cursor_to_idx() const {
+inline size_t LineBuffer::cursor_to_idx() const {
     return cursor.col - _line_start;
 }
 
@@ -34,7 +34,7 @@ void LineBuffer::set_text(const std::string& text) {
 
 void LineBuffer::insert(key_code_t key) {
     if (cursor.col < full_line_length()) {
-        buffer.insert(cursor.col - _line_start, 1, key);
+        buffer.insert(cursor_to_idx(), 1, key);
     } else {
         buffer += key;
     }
@@ -69,14 +69,14 @@ void LineBuffer::go_to_line_start() {
 }
 
 void LineBuffer::go_to_line_end() {
-    cursor.col = buffer.size() + _line_start;
+    cursor.col = idx_to_cursor(buffer.size());
 }
 
 bool LineBuffer::erase_to_beginning() {
     if (buffer.empty())
         return false;
 
-    buffer.erase(0, cursor.col - _line_start);
+    buffer.erase(0, cursor_to_idx());
     go_to_line_start();
 
     return true;
@@ -84,7 +84,7 @@ bool LineBuffer::erase_to_beginning() {
 
 bool LineBuffer::erase_to_end() {
     if (full_line_length() >= cursor.col) {
-        buffer.erase(cursor.col - _line_start);
+        buffer.erase(cursor_to_idx());
         return true;
     }
     return false;
@@ -95,7 +95,7 @@ bool LineBuffer::erase_forward() {
         cursor.col >= _line_start &&
         cursor.col < full_line_length())
     {
-        buffer.erase(cursor.col - _line_start, 1);
+        buffer.erase(cursor_to_idx(), 1);
         return true;
     }
     return false;
@@ -104,7 +104,7 @@ bool LineBuffer::erase_forward() {
 bool LineBuffer::erase_backwards() {
     if (!buffer.empty() && cursor.col > _line_start) {
         if (cursor.col < full_line_length()) {
-            buffer.erase(cursor.col - _line_start, 1);
+            buffer.erase(cursor_to_idx(), 1);
         } else {
             buffer.pop_back();
         }

@@ -9,11 +9,11 @@ class LineBuffer {
     int _line_start {1};
     cursor_pos cursor {};
 
-    int full_line_length() const;
+    inline int full_line_length() const;
 
-    size_t idx_to_cursor() const;
-    size_t idx_to_cursor(int col) const;
-    size_t cursor_to_idx() const;
+    inline size_t idx_to_cursor() const;
+    inline size_t idx_to_cursor(int col) const;
+    inline size_t cursor_to_idx() const;
 
 public:
     void line_start(int col);
