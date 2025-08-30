@@ -4,11 +4,16 @@
 #include <string>
 
 class LineBuffer {
+    std::string word_separators {" ;/&.,\\[]^#$"};
     std::string buffer {};
     int _line_start {1};
     cursor_pos cursor {};
 
-    int full_line_length();
+    int full_line_length() const;
+
+    size_t idx_to_cursor() const;
+    size_t idx_to_cursor(int col) const;
+    size_t cursor_to_idx() const;
 
 public:
     void line_start(int col);
@@ -31,4 +36,7 @@ public:
     bool erase_to_end();
     bool erase_forward();
     bool erase_backwards();
+
+    bool erase_word_backwards();
+    bool erase_word_forward();
 };

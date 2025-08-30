@@ -52,6 +52,20 @@ void LineReader::erase_backwards() {
     }
 }
 
+void LineReader::erase_word_forward() {
+    if (linebuffer.erase_word_forward()) {
+        term.set_cursor_position(linebuffer.cursor_position());
+        redraw_line(_prompt, linebuffer.get_text());
+    }
+}
+
+void LineReader::erase_word_backwards() {
+    if (linebuffer.erase_word_backwards()) {
+        term.set_cursor_position(linebuffer.cursor_position());
+        redraw_line(_prompt, linebuffer.get_text());
+    }
+}
+
 void LineReader::cursor_up() {
     // Do nothing.
     // TODO: implement history lookup here

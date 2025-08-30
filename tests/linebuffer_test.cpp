@@ -165,3 +165,169 @@ TEST(LineBufferTest, eraseForwardAtEndDoesNothing) {
     EXPECT_EQ(linebuffer.get_text(), "hi");
     EXPECT_EQ(linebuffer.cursor_position(), start);
 }
+
+TEST(LineBufferTest, erasesWordBackwards) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 8};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("foo bar");
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), "foo");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 4));
+}
+
+TEST(LineBufferTest, erasesWordBackwardsWithWhitespaces) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 14};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("foo bar      "); // cursor is at the end
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), "foo");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 4));
+}
+
+TEST(LineBufferTest, erasesAllWhenNoWhitespacesPresent) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 14};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("foobarfoobar"); // cursor is at the end
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+    EXPECT_TRUE(status);
+    EXPECT_TRUE(linebuffer.get_text().empty());
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 1));
+}
+
+TEST(LineBufferTest, erasesAllWhenBufferIsBlank) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 13};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("            "); // cursor is at the end
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+    EXPECT_TRUE(status);
+    EXPECT_TRUE(linebuffer.get_text().empty());
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 1));
+}
+
+TEST(LineBufferTest, erasesFromWordMiddle) {
+    LineBuffer linebuffer {};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("foo bar foo");
+    cursor_pos start {1, 10};
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), "foo baroo");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 8));
+}
+
+TEST(LineBufferTest, doesntEraseWordWhenBufferEmpty) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 2};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("");
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+    EXPECT_FALSE(status);
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, erasesWordForward) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 1};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("foo bar"); // cursor is on 'f'
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_forward();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), " bar");
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, erasesWordForwardWithWhitespaces) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 1};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("      foo bar");
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_forward();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), " bar");
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, erasesAllForwardWhenNoWhitespacesPresent) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 1};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("foobarfoobar");
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_forward();
+    EXPECT_TRUE(status);
+    EXPECT_TRUE(linebuffer.get_text().empty());
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, erasesAllForwardWhenBufferIsBlank) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 1};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("            ");
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_forward();
+    EXPECT_TRUE(status);
+    EXPECT_TRUE(linebuffer.get_text().empty());
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, erasesForwardFromWordMiddle) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 6};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("foo bar foo"); // cursor is at "bar"
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_forward();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), "foo b foo");
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, doesntEraseWordForwardWhenBufferEmpty) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 2};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("");
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_forward();
+    EXPECT_FALSE(status);
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
