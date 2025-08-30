@@ -1,4 +1,5 @@
 #include "linereader/linereader.h"
+#include "linereader/types.h"
 #include <iostream>
 
 void LineReader::set_cursor_position(cursor_pos position) {
@@ -59,6 +60,14 @@ void LineReader::cursor_up() {
 void LineReader::cursor_down() {
     // Do nothing.
     // TODO: implement history lookup here
+}
+
+void LineReader::clear() {
+    term.set_cursor_position({1, 1});
+    term.clear_to_screen_end();
+    const int col {linebuffer.cursor_position().col};
+    set_cursor_position({1, col});
+    redraw_line(_prompt, linebuffer.get_text());
 }
 
 void LineReader::go_to_line_start() {

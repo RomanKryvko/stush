@@ -14,6 +14,7 @@ const char CTRL_E = CTRL('e');
 const char CTRL_U = CTRL('u');
 const char CTRL_K = CTRL('k');
 const char CTRL_H = CTRL('h');
+const char CTRL_L = CTRL('l');
 const char BACKSPACE = 0x7f;
 const char ENTER = 0xd;
 const char ESC = 0x1b;
@@ -29,6 +30,7 @@ class LineReader {
         {packn<key_code_t>(0, 0, 0, CTRL_K), std::bind(&LineReader::erase_to_end, this)},
         {packn<key_code_t>(0, 0, 0, CTRL_H), std::bind(&LineReader::erase_backwards, this)},
         {packn<key_code_t>(0, 0, 0, BACKSPACE), std::bind(&LineReader::erase_backwards, this)},
+        {packn<key_code_t>(0, 0, 0, CTRL_L), std::bind(&LineReader::clear, this)},
         {packn<key_code_t>(0x7e, 0x33, 0x5b, 0x1b), std::bind(&LineReader::erase_forward, this)},
         {packn<key_code_t>(0, 0x41, 0x5b, 0x1b), std::bind(&LineReader::cursor_up, this)},
         {packn<key_code_t>(0, 0x42, 0x5b, 0x1b), std::bind(&LineReader::cursor_down, this)},
@@ -42,6 +44,7 @@ class LineReader {
     void move_cursor_left();
     void cursor_up();
     void cursor_down();
+    void clear();
 
     void redraw_line(const std::string& prompt, const std::string& line);
 
