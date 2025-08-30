@@ -1,9 +1,8 @@
+#include "linereader/terminal.h"
 #include <linereader/cmd.h>
 #include <byteutils.h>
 #include <parser.h>
 #include <cassert>
-#include <cstdio>
-#include <cstdlib>
 #include <iostream>
 #include <sched.h>
 #include <stdexcept>
@@ -15,82 +14,35 @@
 #include <wait.h>
 #include <termios.h>
 
-termios orig_termios;
-void disable_raw_mode() {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-}
-
-void enable_raw_mode() {
-    if(tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
-        perror("tcgetattr");
-        exit(EXIT_FAILURE);
-    }
-    atexit(disable_raw_mode); //TODO: check whether we really need it
-    termios raw = orig_termios;
-    raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    raw.c_oflag &= ~(OPOST);
-    raw.c_lflag &= ~(ECHO | ICANON);
-    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-        perror("tcgetattr");
-        exit(EXIT_FAILURE);
-    }
-}
-
 cursor_pos current_cursor {};
 
 // starting column position
 int line_start = 1;
 
-std::string buffer {};
+Terminal term {};
 std::string line_state {};
 std::string _prompt {};
 
-cursor_pos query_cursor_pos() {
-    write(STDOUT_FILENO, "\x1b[6n", 4);
-
-    const int buf_size = 32;
-    char buf[buf_size];
-    int i = 0;
-    char c;
-    while (i < buf_size - 1) {
-        if (read(STDIN_FILENO, &c, 1) != 1)
-            break;
-        buf[i++] = c;
-        if (c == 'R')
-            break;
-    }
-    buf[i] = '\0';
-
-    // Response format: ESC [ row ; col R
-    cursor_pos position;
-    if (sscanf(buf, "\x1b[%d;%dR", &position.row, &position.col) == 2)
-        return position;
-
-    //TODO: introduce some better error handling
-    throw std::runtime_error("Failed to read cursor position: " + std::string(buf));
-}
-
-[[nodiscard]]
-std::string set_cursor_position(cursor_pos position) {
+void set_cursor_position(cursor_pos position) {
     current_cursor = position;
-    return "\x1b[" + std::to_string(position.row) + ";" + std::to_string(position.col) + "H";
+    term.set_cursor_position(position);
 }
 
-[[nodiscard]]
-std::string redraw_line(std::string_view prompt, std::string_view line) {
-    return "\x1b[2K\x1b[" + std::to_string(current_cursor.row) + ";0H" +
-            std::string(prompt) + std::string(line)
-            + set_cursor_position({current_cursor.row, current_cursor.col});
+void redraw_line(const std::string& prompt, const std::string& line) {
+    term.erase_line();
+    term.set_cursor_position({current_cursor.row, 0});
+    term.write_text(prompt + line);
+    term.set_cursor_position(current_cursor);
 }
 
-[[nodiscard]]
-inline std::string move_cursor_right() {
-    return set_cursor_position({current_cursor.row, current_cursor.col + 1});
+inline void move_cursor_right() {
+    term.move_cursor_right();
+    current_cursor.col++;
 }
 
-[[nodiscard]]
-inline std::string move_cursor_left() {
-    return set_cursor_position({current_cursor.row, current_cursor.col - 1});
+inline void move_cursor_left() {
+    term.move_cursor_left();
+    current_cursor.col--;
 }
 
 int full_line_length() {
@@ -98,24 +50,24 @@ int full_line_length() {
 }
 
 void go_to_line_start() {
-    buffer += set_cursor_position({current_cursor.row, line_start});
+    set_cursor_position({current_cursor.row, line_start});
 }
 
 void go_to_line_end() {
-    buffer += set_cursor_position({current_cursor.row, static_cast<int>(line_state.size()) + line_start});
+    set_cursor_position({current_cursor.row, static_cast<int>(line_state.size()) + line_start});
 }
 
 void erase_to_beginning() {
     line_state.erase(0, current_cursor.col - line_start);
-    buffer += "\x1b[1K";
-    buffer += set_cursor_position({current_cursor.row, line_start});
-    buffer += redraw_line(_prompt, line_state);
+    term.erase_to_line_start();
+    set_cursor_position({current_cursor.row, line_start});
+    redraw_line(_prompt, line_state);
 }
 
 void erase_to_end() {
     if (full_line_length() >= current_cursor.col) {
         line_state.erase(current_cursor.col - line_start);
-        buffer += "\x1b[K";
+        term.erase_to_line_end();
     }
 }
 
@@ -125,7 +77,7 @@ void erase_forward() {
         current_cursor.col < full_line_length())
     {
         line_state.erase(current_cursor.col - line_start, 1);
-        buffer += redraw_line(_prompt, line_state);
+        redraw_line(_prompt, line_state);
     }
 }
 
@@ -136,36 +88,30 @@ void erase_backwards() {
         } else {
             line_state.pop_back();
         }
-        buffer += move_cursor_left();
-        buffer += redraw_line(_prompt, line_state);
+        move_cursor_left();
+        redraw_line(_prompt, line_state);
     }
 }
 
 void cursor_up() {
     // Do nothing.
-    // current_cursor.row++;
-    // buffer += "\x1b[A";
     // TODO: implement history lookup here
 }
 
 void cursor_down() {
     // Do nothing.
-    // current_cursor.row--;
-    // buffer += "\x1b[B";
     // TODO: implement history lookup here
 }
 
 void cursor_right() {
     if (current_cursor.col < full_line_length()) {
-        current_cursor.col++;
-        buffer += "\x1b[C";
+        move_cursor_right();
     }
 }
 
 void cursor_left() {
     if (current_cursor.col > line_start) {
-        current_cursor.col--;
-        buffer += "\x1b[D";
+        move_cursor_left();
     }
 }
 
@@ -186,10 +132,10 @@ std::unordered_map<key_code_t, command_t> command_map {
 void init_readline(std::string_view prompt) {
     line_state.clear();
     _prompt = prompt;
-    enable_raw_mode();
+    term.enable_raw_mode();
     line_start = _prompt.size() + 1;
     std::cout << "\r\n" << _prompt << std::flush;
-    current_cursor = query_cursor_pos();
+    current_cursor = term.query_cursor_position();
 }
 
 void handle_control(key_code_t key) {
@@ -206,30 +152,22 @@ void handle_normal(key_code_t key) {
     } else {
         line_state += key;
     }
-    buffer += redraw_line(_prompt, line_state);
-    buffer += move_cursor_right();
-}
-
-void commit_changes() {
-    if (!buffer.empty()) {
-        write(STDOUT_FILENO, buffer.c_str(), buffer.size());
-        buffer.clear();
-    }
+    redraw_line(_prompt, line_state);
+    move_cursor_right();
 }
 
 std::string sh_read_line(std::string_view prompt, char terminator) {
     init_readline(prompt);
-    key_code_t key {};
-    while (read(STDIN_FILENO, &key, sizeof key) != -1 && key != terminator) {
-        char lastchar = key & 0xFF;
-        if (iscntrl(lastchar)) {
+    key_code_t key {term.read_key()};
+    while (key != terminator) {
+        if (iscntrl(key & 0xFF)) { // check lowest byte
             handle_control(key);
         } else {
             handle_normal(key);
         }
-        commit_changes();
-        key = 0;
+        term.commit();
+        key = term.read_key();
     }
-    disable_raw_mode();
+    term.disable_raw_mode();
     return line_state;
 }

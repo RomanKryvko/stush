@@ -1,17 +1,8 @@
 #pragma once
 
 #include <string_view>
-#include <string>
 #include <termios.h>
 
-struct cursor_pos {
-    cursor_pos() = default;
-    cursor_pos(int row, int col) : row(row), col(col) {}
-    int row {};
-    int col {};
-};
-
-using key_code_t = int32_t;
 using command_t = void(*)(void);
 
 const char CTRL_A = CTRL('a');
@@ -23,18 +14,10 @@ const char BACKSPACE = 0x7f;
 const char ENTER = 0xd;
 const char ESC = 0x1b;
 
-void disable_raw_mode();
+void redraw_line(const std::string& prompt, const std::string& line);
 
-void enable_raw_mode();
+void move_cursor_right();
 
-cursor_pos query_cursor_pos();
-
-std::string set_cursor_position(cursor_pos position);
-
-std::string redraw_line(std::string_view prompt, std::string_view line);
-
-std::string move_cursor_right();
-
-std::string move_cursor_left();
+void move_cursor_left();
 
 std::string sh_read_line(std::string_view prompt, char terminator = ENTER);
