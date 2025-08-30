@@ -4,4 +4,5 @@ set(CMAKE_CXX_STANDARD 20)
 target_sources(stush PRIVATE
     cmd.cpp
     terminal.cpp
+    linebuffer.cpp
 )

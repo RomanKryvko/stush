@@ -50,7 +50,7 @@ public:
         throw std::runtime_error("Failed to read cursor position: " + std::string(buf));
     }
 
-    void set_cursor_position(const cursor_pos& cursor);
+    void set_cursor_position(cursor_pos cursor);
 
     void disable_raw_mode();
     void enable_raw_mode();

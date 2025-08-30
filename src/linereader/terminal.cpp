@@ -40,7 +40,7 @@ void Terminal::enable_raw_mode() {
     is_in_raw_mode = true;
 }
 
-void Terminal::set_cursor_position(const cursor_pos& cursor) {
+void Terminal::set_cursor_position(cursor_pos cursor) {
     buffer += "\x1b[" + std::to_string(cursor.row) + ";" + std::to_string(cursor.col) + "H";
 }
 

@@ -22,6 +22,19 @@ target_link_libraries(
     GTest::gtest_main
 )
 
+add_executable(linebuffer_test)
+target_include_directories(linebuffer_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_sources(linebuffer_test  PRIVATE
+    linebuffer_test.cpp
+    ${PROJECT_SOURCE_DIR}/src/linereader/linebuffer.cpp
+)
+
+target_link_libraries(
+    linebuffer_test
+    GTest::gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(parser_test)
 gtest_discover_tests(byteutils_test)
+gtest_discover_tests(linebuffer_test)
