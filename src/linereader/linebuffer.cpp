@@ -1,4 +1,5 @@
 #include "linereader/linebuffer.h"
+#include "byteutils.h"
 #include <algorithm>
 #include <string>
 
@@ -46,12 +47,28 @@ void LineBuffer::set_text(const std::string& text) {
     buffer = text;
 }
 
-void LineBuffer::insert(key_code_t key) {
-    if (cursor.col < full_line_length()) {
-        buffer.insert(cursor_to_idx(), 1, key);
+bool LineBuffer::insert(key_code_t key) {
+    const auto bytes {highest_nonzero_byte(key)};
+    if (bytes == -1)
+        return false;
+
+    const auto insert_at = [&](std::string_view s) {
+        if (cursor.col < full_line_length())
+            buffer.insert(cursor_to_idx(), s);
+        else
+            buffer += s;
+
+        cursor.col += s.size();
+    };
+
+    if (bytes == 1) {
+        const char c {static_cast<char>(key)};
+        insert_at(std::string_view(&c, 1));
     } else {
-        buffer += key;
+        const auto str {unpack_str(key)};
+        insert_at(str);
     }
+    return true;
 }
 
 cursor_pos LineBuffer::cursor_position() const {

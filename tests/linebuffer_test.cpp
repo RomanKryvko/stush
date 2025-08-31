@@ -78,10 +78,10 @@ TEST(LineBufferTest, insertAtEnd) {
 
     linebuffer.set_text("foo");
     linebuffer.cursor_position(start); // after last char
-    linebuffer.insert('x'); // insert does not move the cursor by itself
+    linebuffer.insert('x'); // insert moves the cursor
 
     EXPECT_EQ(linebuffer.get_text(), "foox");
-    EXPECT_EQ(linebuffer.cursor_position(), start);
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
 }
 
 TEST(LineBufferTest, insertAtBeginning) {
@@ -94,7 +94,7 @@ TEST(LineBufferTest, insertAtBeginning) {
     linebuffer.insert('X');
 
     EXPECT_EQ(linebuffer.get_text(), "Xbar");
-    EXPECT_EQ(linebuffer.cursor_position(), start);
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 2));
 }
 
 TEST(LineBufferTest, insertInMiddle) {
@@ -107,7 +107,7 @@ TEST(LineBufferTest, insertInMiddle) {
     linebuffer.insert('X');
 
     EXPECT_EQ(linebuffer.get_text(), "abXcd");
-    EXPECT_EQ(linebuffer.cursor_position(), start);
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 4));
 }
 
 TEST(LineBufferTest, eraseBackwardAtEnd) {

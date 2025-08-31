@@ -28,7 +28,7 @@ public:
 
     const std::string& get_text() const;
     void set_text(const std::string& text);
-    void insert(key_code_t key);
+    bool insert(key_code_t key);
 
     cursor_pos cursor_position() const;
     void cursor_position(cursor_pos position);

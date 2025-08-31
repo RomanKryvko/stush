@@ -127,9 +127,10 @@ void LineReader::handle_control(key_code_t key) {
 }
 
 void LineReader::handle_normal(key_code_t key) {
-    linebuffer.insert(key);
-    redraw_line(_prompt, linebuffer.get_text());
-    move_cursor_right();
+    if (linebuffer.insert(key)) {
+        redraw_line(_prompt, linebuffer.get_text());
+        term.set_cursor_position(linebuffer.cursor_position());
+    }
 }
 
 std::string LineReader::sh_read_line(std::string_view prompt, char terminator) {

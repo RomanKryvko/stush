@@ -51,3 +51,17 @@ TEST(ByteutilsTest, handlesPartial) {
     int32_t exp = 0b00010010'00110100;
     EXPECT_EQ(act, exp);
 }
+
+TEST(ByteutilsTest, unpacksString) {
+    int32_t packed = packn<int32_t>('C', 'B', 'A');
+    std::string act = unpack_str(packed);
+    std::string exp = "ABC";
+    EXPECT_EQ(act, exp);
+}
+
+TEST(ByteutilsTest, unpacksEmptyString) {
+    int32_t packed = packn<int32_t>(0, 0, 0, 0);
+    std::string act = unpack_str(packed);
+    std::string exp = "";
+    EXPECT_EQ(act, exp);
+}
