@@ -1,11 +1,11 @@
 #include "linereader/linebuffer.h"
-#include "linereader/utf8utils.h"
 #include "byteutils.h"
 #include <algorithm>
+#include <cstddef>
 #include <string>
 
 inline int LineBuffer::full_line_length() const {
-    return utf8_strlen(buffer) + _line_start; //FIXME: get rid of this strlen
+    return buffer.char_size() + _line_start;
 }
 
 inline size_t LineBuffer::idx_to_cursor() const {
@@ -17,20 +17,7 @@ inline size_t LineBuffer::idx_to_cursor(int col) const {
 }
 
 inline size_t LineBuffer::cursor_to_idx() const {
-    const int idx {cursor.col - _line_start};
-    const char c {buffer.at(idx)};
-
-    if (!is_utf8(c))
-        return idx;
-
-    const int startidx {is_lead(c) ? idx + 1 : idx};
-    int i {};
-    for (i = startidx; i < buffer.size(); i++) {
-        if (is_lead(buffer.at(i))) {
-            return i;
-        }
-    }
-    return i;
+    return cursor.col - _line_start;
 }
 
 inline void LineBuffer::cut(size_t pos, size_t n) {
@@ -54,7 +41,7 @@ const std::string& LineBuffer::word_separators() const {
 }
 
 const std::string& LineBuffer::get_text() const {
-    return buffer;
+    return buffer.stdstr();
 }
 
 void LineBuffer::set_text(const std::string& text) {
@@ -67,12 +54,13 @@ bool LineBuffer::insert(key_code_t key) {
         return false;
 
     const auto insert_at = [&](std::string_view s) {
+        size_t old_len {buffer.char_size()};
         if (cursor.col < full_line_length())
             buffer.insert(cursor_to_idx(), s);
         else
             buffer += s;
 
-        cursor.col += utf8_strlen(s);
+        cursor.col += buffer.char_size() - old_len;
     };
 
     if (bytes == 0) {
@@ -116,7 +104,7 @@ void LineBuffer::jump_word_right() {
     const size_t adjusted_cursor {cursor_to_idx()};
     size_t idx {std::string::npos};
     for (const auto c : _word_separators) {
-        size_t char_idx {buffer.find_first_of(c, adjusted_cursor + 1)};
+        size_t char_idx {buffer.stdstr().find_first_of(c, adjusted_cursor + 1)};
         idx = std::min(char_idx, idx);
     }
 
@@ -133,7 +121,7 @@ void LineBuffer::jump_word_left() {
     size_t adjusted_cursor {cursor_to_idx()};
     size_t idx {0};
     for (const auto c : _word_separators) {
-        size_t char_idx {buffer.find_last_of(c, adjusted_cursor - 1)};
+        size_t char_idx {buffer.stdstr().find_last_of(c, adjusted_cursor - 1)};
         if (char_idx != std::string::npos)
             idx = std::max(char_idx, idx);
     }
@@ -149,7 +137,7 @@ void LineBuffer::go_to_line_start() {
 }
 
 void LineBuffer::go_to_line_end() {
-    cursor.col = idx_to_cursor(buffer.size());
+    cursor.col = idx_to_cursor(buffer.char_size());
 }
 
 bool LineBuffer::erase_to_beginning() {
@@ -164,7 +152,7 @@ bool LineBuffer::erase_to_beginning() {
 
 bool LineBuffer::erase_to_end() {
     if (full_line_length() >= cursor.col) {
-        cut(cursor_to_idx(), buffer.size() - cursor_to_idx());
+        cut(cursor_to_idx(), buffer.char_size() - cursor_to_idx());
         return true;
     }
     return false;
@@ -198,18 +186,18 @@ bool LineBuffer::erase_word_backwards() {
         return false;
 
     const size_t adjusted_cursor {cursor_to_idx()};
-    size_t space_idx {buffer.find_last_of(' ', adjusted_cursor + 1)};
+    size_t space_idx {buffer.stdstr().find_last_of(' ', adjusted_cursor + 1)};
     if (space_idx == std::string::npos) { // the string has no whitespaces
         return erase_to_beginning();
     }
 
     if (space_idx == adjusted_cursor - 1) { // cursor is on whitespace
-        size_t char_idx {buffer.find_last_not_of(' ', adjusted_cursor)};
+        size_t char_idx {buffer.stdstr().find_last_not_of(' ', adjusted_cursor)};
         if (char_idx == std::string::npos) { // the string consists of whitespaces
             return erase_to_beginning();
         }
 
-        space_idx = buffer.find_last_of(' ', char_idx);
+        space_idx = buffer.stdstr().find_last_of(' ', char_idx);
         if (space_idx == std::string::npos) {
             return erase_to_beginning();
         }
@@ -227,18 +215,18 @@ bool LineBuffer::erase_word_forward() {
         return false;
 
     const size_t adjusted_cursor {cursor_to_idx()};
-    size_t space_idx {buffer.find_first_of(' ', adjusted_cursor)};
+    size_t space_idx {buffer.stdstr().find_first_of(' ', adjusted_cursor)};
     if (space_idx == std::string::npos) { // the string has no whitespaces
         return erase_to_end();
     }
 
     if (space_idx == adjusted_cursor) { // cursor is on whitespace
-        size_t char_idx {buffer.find_first_not_of(' ', adjusted_cursor)};
+        size_t char_idx {buffer.stdstr().find_first_not_of(' ', adjusted_cursor)};
         if (char_idx == std::string::npos) { // the string consists of whitespaces
             return erase_to_end();
         }
 
-        space_idx = buffer.find_first_of(' ', char_idx);
+        space_idx = buffer.stdstr().find_first_of(' ', char_idx);
         if (space_idx == std::string::npos) {
             return erase_to_end();
         }
@@ -254,10 +242,10 @@ bool LineBuffer::paste() {
         return false;
 
     if (cursor.col < full_line_length()) {
-        buffer.insert(cursor_to_idx(), yank_buffer);
+        buffer.insert_utf8(cursor_to_idx(), yank_buffer);
     } else {
         buffer += yank_buffer;
     }
-    cursor.col += yank_buffer.size();
+    cursor.col += yank_buffer.char_size();
     return true;
 }

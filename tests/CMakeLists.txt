@@ -27,6 +27,7 @@ target_include_directories(linebuffer_test PRIVATE ${PROJECT_SOURCE_DIR}/include
 target_sources(linebuffer_test  PRIVATE
     linebuffer_test.cpp
     ${PROJECT_SOURCE_DIR}/src/linereader/linebuffer.cpp
+    ${PROJECT_SOURCE_DIR}/src/linereader/utfstring.cpp
 )
 
 target_link_libraries(

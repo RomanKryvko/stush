@@ -9,10 +9,12 @@ std::string utf8string::get_out_of_range_msg(int idx) const {
     std::to_string(buffer.size()) + ")";
 }
 
+utf8string::utf8string() = default;
+
 utf8string::utf8string(const std::string& str) :
-buffer(str),
-_char_size(utf8_strlen(str))
-    { }
+    buffer(str),
+    _char_size(utf8_strlen(str))
+{ }
 
 utf8string::utf8string(const char* str) :
     buffer(str),
@@ -30,6 +32,10 @@ size_t utf8string::byte_size() const {
 
 size_t utf8string::char_size() const {
     return _char_size;
+}
+
+bool utf8string::empty() const {
+    return buffer.empty();
 }
 
 const std::string& utf8string::stdstr() const {
@@ -72,6 +78,12 @@ void utf8string::insert(size_t char_idx, char chr) {
     buffer.insert(byte_idx, 1, chr);
 }
 
+void utf8string::insert_utf8(size_t char_idx, utf8string other) {
+    size_t byte_idx {char_to_byte(char_idx)};
+    _char_size += other.char_size();
+    buffer.insert(byte_idx, other.stdstr());
+}
+
 // Erase single UTF-8 character at idx
 void utf8string::erase_at(size_t pos) {
     size_t byte_idx {char_to_byte(pos)};
@@ -104,3 +116,54 @@ void utf8string::erase(size_t pos, size_t n) {
     _char_size -= diff;
 }
 
+utf8string& utf8string::append(std::string_view str) {
+    _char_size += utf8_strlen(str);
+    buffer += str;
+    return *this;
+}
+
+utf8string& utf8string::operator +=(std::string_view str) {
+    append(str);
+    return *this;
+}
+
+utf8string& utf8string::operator +(std::string_view str) {
+    append(str);
+    return *this;
+}
+
+utf8string& utf8string::operator +=(utf8string other) {
+    buffer += other.stdstr();
+    _char_size += other.char_size();
+    return *this;
+}
+
+utf8string& utf8string::operator +(utf8string other) {
+    buffer += other.stdstr();
+    _char_size += other.char_size();
+    return *this;
+}
+
+void utf8string::pop_back() {
+    if (buffer.empty())
+        throw std::out_of_range("String must be not empty to pop.");
+
+    erase_at(_char_size - 1);
+}
+
+utf8string utf8string::substr(size_t pos, size_t n) const {
+    // Mimics behavior of std::string::erase
+    if (buffer.empty() && pos == 0 && n == std::string::npos)
+        return *this;
+
+    size_t start_idx {char_to_byte(pos)};
+    size_t end_idx {char_to_byte(pos + n)};
+    if (start_idx >= buffer.size())
+        throw std::out_of_range(get_out_of_range_msg(start_idx));
+
+    if (n == std::string::npos || pos + n > _char_size)
+        return buffer.substr(start_idx);
+
+    auto diff {end_idx - start_idx};
+    return buffer.substr(start_idx, diff);
+}
