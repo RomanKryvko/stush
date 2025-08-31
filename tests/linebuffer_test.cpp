@@ -331,3 +331,45 @@ TEST(LineBufferTest, doesntEraseWordForwardWhenBufferEmpty) {
     EXPECT_FALSE(status);
     EXPECT_EQ(linebuffer.cursor_position(), start);
 }
+
+TEST(LineBufferTest, yanksLine) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 5};
+    const std::string text {"test"};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text(text);
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_to_beginning();
+
+    EXPECT_EQ(linebuffer.get_text(), "");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 1));
+
+    status &= linebuffer.paste();
+
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), text);
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, yanksWord) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 11};
+    const std::string text {"test test2"};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text(text);
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+
+    EXPECT_EQ(linebuffer.get_text(), "test");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
+
+    status &= linebuffer.paste();
+
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), text);
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}

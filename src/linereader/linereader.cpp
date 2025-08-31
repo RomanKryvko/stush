@@ -94,6 +94,11 @@ void LineReader::go_to_line_end() {
     term.set_cursor_position(linebuffer.cursor_position());
 }
 
+void LineReader::paste() {
+    if (linebuffer.paste())
+        redraw_line(_prompt, linebuffer.get_text());
+}
+
 void LineReader::init_readline(std::string_view prompt) {
     linebuffer.set_text("");
     _prompt = prompt;

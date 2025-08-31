@@ -16,6 +16,11 @@ inline size_t LineBuffer::cursor_to_idx() const {
     return cursor.col - _line_start;
 }
 
+inline void LineBuffer::cut(size_t pos, size_t n) {
+    yank_buffer = buffer.substr(pos, n);
+    buffer.erase(pos, n);
+}
+
 void LineBuffer::line_start(int col) {
     _line_start = col;
 }
@@ -76,7 +81,7 @@ bool LineBuffer::erase_to_beginning() {
     if (buffer.empty())
         return false;
 
-    buffer.erase(0, cursor_to_idx());
+    cut(0, cursor_to_idx());
     go_to_line_start();
 
     return true;
@@ -84,7 +89,7 @@ bool LineBuffer::erase_to_beginning() {
 
 bool LineBuffer::erase_to_end() {
     if (full_line_length() >= cursor.col) {
-        buffer.erase(cursor_to_idx());
+        cut(cursor_to_idx(), buffer.size() - cursor_to_idx());
         return true;
     }
     return false;
@@ -133,11 +138,11 @@ bool LineBuffer::erase_word_backwards() {
         if (space_idx == std::string::npos) {
             return erase_to_beginning();
         }
-        buffer.erase(space_idx, char_idx - adjusted_cursor);
+        cut(space_idx, char_idx - adjusted_cursor);
         cursor.col = idx_to_cursor(space_idx);
         return true;
     }
-    buffer.erase(space_idx, adjusted_cursor - space_idx);
+    cut(space_idx, adjusted_cursor - space_idx);
     cursor.col = idx_to_cursor(space_idx);
     return true;
 }
@@ -162,9 +167,22 @@ bool LineBuffer::erase_word_forward() {
         if (space_idx == std::string::npos) {
             return erase_to_end();
         }
-        buffer.erase(adjusted_cursor, space_idx - adjusted_cursor);
+        cut(adjusted_cursor, space_idx - adjusted_cursor);
         return true;
     }
-    buffer.erase(adjusted_cursor, space_idx - adjusted_cursor);
+    cut(adjusted_cursor, space_idx - adjusted_cursor);
+    return true;
+}
+
+bool LineBuffer::paste() {
+    if (yank_buffer.empty())
+        return false;
+
+    if (cursor.col < full_line_length()) {
+        buffer.insert(cursor_to_idx(), yank_buffer);
+    } else {
+        buffer += yank_buffer;
+    }
+    cursor.col += yank_buffer.size();
     return true;
 }

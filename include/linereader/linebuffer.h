@@ -1,11 +1,13 @@
 #pragma once
 
 #include "types.h"
+#include <cstddef>
 #include <string>
 
 class LineBuffer {
     std::string word_separators {" ;/&.,\\[]^#$"};
     std::string buffer {};
+    std::string yank_buffer {};
     int _line_start {1};
     cursor_pos cursor {};
 
@@ -14,6 +16,8 @@ class LineBuffer {
     inline size_t idx_to_cursor() const;
     inline size_t idx_to_cursor(int col) const;
     inline size_t cursor_to_idx() const;
+
+    inline void cut(size_t pos, size_t n);
 
 public:
     void line_start(int col);
@@ -39,4 +43,6 @@ public:
 
     bool erase_word_backwards();
     bool erase_word_forward();
+
+    bool paste();
 };
