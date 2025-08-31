@@ -34,7 +34,20 @@ target_link_libraries(
     GTest::gtest_main
 )
 
+add_executable(utfstring_test)
+target_include_directories(utfstring_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_sources(utfstring_test  PRIVATE
+    utfstring_test.cpp
+    ${PROJECT_SOURCE_DIR}/src/linereader/utfstring.cpp
+)
+
+target_link_libraries(
+    utfstring_test
+    GTest::gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(parser_test)
 gtest_discover_tests(byteutils_test)
 gtest_discover_tests(linebuffer_test)
+gtest_discover_tests(utfstring_test)

@@ -1,10 +1,11 @@
 #include "linereader/linebuffer.h"
+#include "linereader/utf8utils.h"
 #include "byteutils.h"
 #include <algorithm>
 #include <string>
 
 inline int LineBuffer::full_line_length() const {
-    return buffer.size() + _line_start;
+    return utf8_strlen(buffer) + _line_start; //FIXME: get rid of this strlen
 }
 
 inline size_t LineBuffer::idx_to_cursor() const {
@@ -16,7 +17,20 @@ inline size_t LineBuffer::idx_to_cursor(int col) const {
 }
 
 inline size_t LineBuffer::cursor_to_idx() const {
-    return cursor.col - _line_start;
+    const int idx {cursor.col - _line_start};
+    const char c {buffer.at(idx)};
+
+    if (!is_utf8(c))
+        return idx;
+
+    const int startidx {is_lead(c) ? idx + 1 : idx};
+    int i {};
+    for (i = startidx; i < buffer.size(); i++) {
+        if (is_lead(buffer.at(i))) {
+            return i;
+        }
+    }
+    return i;
 }
 
 inline void LineBuffer::cut(size_t pos, size_t n) {
@@ -48,7 +62,7 @@ void LineBuffer::set_text(const std::string& text) {
 }
 
 bool LineBuffer::insert(key_code_t key) {
-    const auto bytes {highest_nonzero_byte(key)};
+    const auto bytes {highest_nonzero_byte(key)}; //NOTE: number of bytes is 0-indexed
     if (bytes == -1)
         return false;
 
@@ -58,10 +72,10 @@ bool LineBuffer::insert(key_code_t key) {
         else
             buffer += s;
 
-        cursor.col += s.size();
+        cursor.col += utf8_strlen(s);
     };
 
-    if (bytes == 1) {
+    if (bytes == 0) {
         const char c {static_cast<char>(key)};
         insert_at(std::string_view(&c, 1));
     } else {

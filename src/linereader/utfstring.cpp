@@ -1,0 +1,106 @@
+#include "linereader/utf8utils.h"
+#include "linereader/utfstring.h"
+#include <cstdint>
+#include <stdexcept>
+
+std::string utf8string::get_out_of_range_msg(int idx) const {
+    return "Idx " + std::to_string(idx) +
+    " can not be greater then byte size (" +
+    std::to_string(buffer.size()) + ")";
+}
+
+utf8string::utf8string(const std::string& str) :
+buffer(str),
+_char_size(utf8_strlen(str))
+    { }
+
+utf8string::utf8string(const char* str) :
+    buffer(str),
+    _char_size(utf8_strlen(str))
+{ }
+
+utf8string::utf8string(std::string_view str) :
+    buffer(str),
+    _char_size(utf8_strlen(str))
+{ }
+
+size_t utf8string::byte_size() const {
+    return buffer.size();
+}
+
+size_t utf8string::char_size() const {
+    return _char_size;
+}
+
+const std::string& utf8string::stdstr() const {
+    return buffer;
+}
+
+void utf8string::stdstr(const std::string& str) {
+    buffer = str;
+    _char_size = utf8_strlen(buffer);
+}
+
+size_t utf8string::char_to_byte(size_t char_idx) const {
+    size_t i {};
+    size_t chars {};
+    while (i < buffer.size() && chars < char_idx) {
+        i += utf8_seq_length((uint8_t)buffer.at(i));
+        chars++;
+    }
+    return i;
+}
+
+std::string utf8string::at(size_t char_idx) const {
+    size_t byte_idx {char_to_byte(char_idx)};
+    if (byte_idx >= buffer.size())
+        throw std::out_of_range(get_out_of_range_msg(byte_idx));
+
+    int len {utf8_seq_length((uint8_t)buffer.at(byte_idx))};
+    return buffer.substr(byte_idx, len);
+}
+
+void utf8string::insert(size_t char_idx, std::string_view utf8_char) {
+    size_t byte_idx {char_to_byte(char_idx)};
+    _char_size += utf8_strlen(utf8_char);
+    buffer.insert(byte_idx, utf8_char);
+}
+
+void utf8string::insert(size_t char_idx, char chr) {
+    size_t byte_idx {char_to_byte(char_idx)};
+    _char_size++;
+    buffer.insert(byte_idx, 1, chr);
+}
+
+// Erase single UTF-8 character at idx
+void utf8string::erase_at(size_t pos) {
+    size_t byte_idx {char_to_byte(pos)};
+    if (byte_idx >= buffer.size())
+        throw std::out_of_range(get_out_of_range_msg(byte_idx));
+
+    int len {utf8_seq_length((uint8_t)buffer.at(byte_idx))};
+    _char_size--;
+    buffer.erase(byte_idx, len);
+}
+
+void utf8string::erase(size_t pos, size_t n) {
+    // Mimics behavior of std::string::erase
+    if (buffer.empty() && pos == 0 && n == std::string::npos)
+        return;
+
+    size_t start_idx {char_to_byte(pos)};
+    size_t end_idx {char_to_byte(pos + n)};
+    if (start_idx >= buffer.size())
+        throw std::out_of_range(get_out_of_range_msg(start_idx));
+
+    if (n == std::string::npos || pos + n > _char_size) {
+        buffer.erase(start_idx);
+        _char_size = pos;
+        return;
+    }
+
+    auto diff {end_idx - start_idx};
+    buffer.erase(start_idx, diff);
+    _char_size -= diff;
+}
+

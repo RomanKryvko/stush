@@ -129,14 +129,13 @@ void LineReader::handle_control(key_code_t key) {
 void LineReader::handle_normal(key_code_t key) {
     if (linebuffer.insert(key)) {
         redraw_line(_prompt, linebuffer.get_text());
-        term.set_cursor_position(linebuffer.cursor_position());
     }
 }
 
 std::string LineReader::sh_read_line(std::string_view prompt, char terminator) {
     init_readline(prompt);
     key_code_t key {term.read_key()};
-    while (key != terminator) {
+    while (key != terminator) { //FIXME: do not terminate if there still are characters in queue (handle line break)
         if (iscntrl(key & 0xFF)) { // check lowest byte
             handle_control(key);
         } else {

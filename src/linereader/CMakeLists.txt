@@ -5,4 +5,5 @@ target_sources(stush PRIVATE
     linereader.cpp
     terminal.cpp
     linebuffer.cpp
+    utfstring.cpp
 )
