@@ -9,8 +9,6 @@
 
 class Terminal {
 private:
-    termios orig_termios {};
-    bool is_in_raw_mode {false};
     std::string buffer {};
 
 public:

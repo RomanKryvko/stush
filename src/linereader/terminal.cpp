@@ -3,14 +3,17 @@
 #include <cstdio>
 #include <unistd.h>
 
+// We need this to be global state to ensure that we can disable raw mode on exit
+termios orig_termios {};
+bool is_in_raw_mode {false};
+
 Terminal::Terminal() = default;
 
 Terminal::~Terminal() {
-    if (is_in_raw_mode)
-        disable_raw_mode();
+    disable_raw_mode();
 }
 
-void Terminal::disable_raw_mode() {
+void _disable_raw_mode() {
     if (!is_in_raw_mode)
         return;
 
@@ -21,10 +24,15 @@ void Terminal::disable_raw_mode() {
     is_in_raw_mode = false;
 }
 
+void Terminal::disable_raw_mode() {
+    _disable_raw_mode();
+}
+
 void Terminal::enable_raw_mode() {
     if (is_in_raw_mode)
         return;
 
+    atexit(_disable_raw_mode);
     if(tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
         perror("tcgetattr");
         exit(EXIT_FAILURE);
