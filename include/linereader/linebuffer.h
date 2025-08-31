@@ -5,7 +5,7 @@
 #include <string>
 
 class LineBuffer {
-    std::string word_separators {" ;/&.,\\[]^#$"};
+    std::string _word_separators {" ;/&.,\\[]^#$"};
     std::string buffer {};
     std::string yank_buffer {};
     int _line_start {1};
@@ -23,6 +23,9 @@ public:
     void line_start(int col);
     int line_start() const;
 
+    void word_separators(const std::string& separators);
+    const std::string& word_separators() const;
+
     const std::string& get_text() const;
     void set_text(const std::string& text);
     void insert(key_code_t key);
@@ -32,6 +35,9 @@ public:
 
     bool move_cursor_right();
     bool move_cursor_left();
+
+    void jump_word_right();
+    void jump_word_left();
 
     void go_to_line_start();
     void go_to_line_end();

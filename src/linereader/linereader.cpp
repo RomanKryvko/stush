@@ -84,6 +84,16 @@ void LineReader::clear() {
     redraw_line(_prompt, linebuffer.get_text());
 }
 
+void LineReader::jump_word_left() {
+    linebuffer.jump_word_left();
+    term.set_cursor_position(linebuffer.cursor_position());
+}
+
+void LineReader::jump_word_right() {
+    linebuffer.jump_word_right();
+    term.set_cursor_position(linebuffer.cursor_position());
+}
+
 void LineReader::go_to_line_start() {
     linebuffer.go_to_line_start();
     term.set_cursor_position(linebuffer.cursor_position());

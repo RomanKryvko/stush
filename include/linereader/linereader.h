@@ -23,25 +23,29 @@ const char ENTER = 0xd;
 const char ESC = 0x1b;
 
 class LineReader {
+    using funcmap = std::unordered_map<key_code_t, std::function<void()>>;
     Terminal term {};
     LineBuffer linebuffer {};
     std::string _prompt {};
-    std::unordered_map<key_code_t, std::function<void()>> command_map {
-        {packn<key_code_t>(0, 0, 0, CTRL_A), std::bind(&LineReader::go_to_line_start, this)},
-        {packn<key_code_t>(0, 0, 0, CTRL_E), std::bind(&LineReader::go_to_line_end, this)},
-        {packn<key_code_t>(0, 0, 0, CTRL_U), std::bind(&LineReader::erase_to_beginning, this)},
-        {packn<key_code_t>(0, 0, 0, CTRL_K), std::bind(&LineReader::erase_to_end, this)},
-        {packn<key_code_t>(0, 0, 0, CTRL_H), std::bind(&LineReader::erase_backwards, this)},
-        {packn<key_code_t>(0, 0, 0, BACKSPACE), std::bind(&LineReader::erase_backwards, this)},
-        {packn<key_code_t>(0, 0, 0, CTRL_L), std::bind(&LineReader::clear, this)},
-        {packn<key_code_t>(0, 0, 0, CTRL_W), std::bind(&LineReader::erase_word_backwards, this)},
-        {packn<key_code_t>(0, 0, 0, CTRL_D), std::bind(&LineReader::erase_word_forward, this)},
-        {packn<key_code_t>(0, 0, 0, CTRL_Y), std::bind(&LineReader::paste, this)},
-        {packn<key_code_t>(0x7e, 0x33, 0x5b, 0x1b), std::bind(&LineReader::erase_forward, this)},
-        {packn<key_code_t>(0, 0x41, 0x5b, 0x1b), std::bind(&LineReader::cursor_up, this)},
-        {packn<key_code_t>(0, 0x42, 0x5b, 0x1b), std::bind(&LineReader::cursor_down, this)},
-        {packn<key_code_t>(0, 0x43, 0x5b, 0x1b), std::bind(&LineReader::move_cursor_right, this)},
-        {packn<key_code_t>(0, 0x44, 0x5b, 0x1b), std::bind(&LineReader::move_cursor_left, this)},
+    funcmap command_map {
+        {packn<key_code_t>(CTRL_A), std::bind(&LineReader::go_to_line_start, this)},
+        {packn<key_code_t>(CTRL_E), std::bind(&LineReader::go_to_line_end, this)},
+        {packn<key_code_t>(CTRL_U), std::bind(&LineReader::erase_to_beginning, this)},
+        {packn<key_code_t>(CTRL_K), std::bind(&LineReader::erase_to_end, this)},
+        {packn<key_code_t>(CTRL_H), std::bind(&LineReader::erase_word_backwards, this)},
+        {packn<key_code_t>(BACKSPACE), std::bind(&LineReader::erase_backwards, this)},
+        {packn<key_code_t>(CTRL_L), std::bind(&LineReader::clear, this)},
+        {packn<key_code_t>(CTRL_W), std::bind(&LineReader::erase_word_backwards, this)},
+        {packn<key_code_t>(CTRL_D), std::bind(&LineReader::erase_word_forward, this)},
+        {packn<key_code_t>(CTRL_Y), std::bind(&LineReader::paste, this)},
+        {packn<key_code_t>(0x7e, 0x33, 0x5b, ESC), std::bind(&LineReader::erase_forward, this)},
+        {packn<key_code_t>(0x41, 0x5b, ESC), std::bind(&LineReader::cursor_up, this)},
+        {packn<key_code_t>(0x42, 0x5b, ESC), std::bind(&LineReader::cursor_down, this)},
+        {packn<key_code_t>(0x43, 0x5b, ESC), std::bind(&LineReader::move_cursor_right, this)},
+        {packn<key_code_t>(0x44, 0x5b, ESC), std::bind(&LineReader::move_cursor_left, this)},
+        {packn<key_code_t>('D', '5', ';', '1', 0x5b, ESC), std::bind(&LineReader::jump_word_left, this)},
+        {packn<key_code_t>('C', '5', ';', '1', 0x5b, ESC), std::bind(&LineReader::jump_word_right, this)},
+        {packn<key_code_t>('~', '5', ';', '3', 0x5b, ESC), std::bind(&LineReader::erase_word_forward, this)},
     };
 
     void set_cursor_position(cursor_pos position);
@@ -51,6 +55,9 @@ class LineReader {
     void cursor_up();
     void cursor_down();
     void clear();
+
+    void jump_word_left();
+    void jump_word_right();
 
     void redraw_line(const std::string& prompt, const std::string& line);
 

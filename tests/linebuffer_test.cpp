@@ -112,7 +112,7 @@ TEST(LineBufferTest, insertInMiddle) {
 
 TEST(LineBufferTest, eraseBackwardAtEnd) {
     LineBuffer linebuffer {};
-    cursor_pos start {1, 4};
+    cursor_pos start {1, 5};
 
     linebuffer.set_text("test");
     linebuffer.line_start(1);
@@ -371,5 +371,45 @@ TEST(LineBufferTest, yanksWord) {
 
     EXPECT_TRUE(status);
     EXPECT_EQ(linebuffer.get_text(), text);
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, jumpsWordLeft) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 11};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("test test2");
+    linebuffer.cursor_position(start);
+
+    linebuffer.jump_word_left();
+
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
+}
+
+TEST(LineBufferTest, jumpsWordRight) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 1};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("test test2");
+    linebuffer.cursor_position(start);
+
+    linebuffer.jump_word_right();
+
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
+}
+
+TEST(LineBufferTest, jumpsWordNoSeparators) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 1};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("testtest2");
+    linebuffer.cursor_position(start);
+
+    linebuffer.jump_word_right();
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 10));
+    linebuffer.jump_word_left();
     EXPECT_EQ(linebuffer.cursor_position(), start);
 }

@@ -1,4 +1,6 @@
 #include "linereader/linebuffer.h"
+#include <algorithm>
+#include <string>
 
 inline int LineBuffer::full_line_length() const {
     return buffer.size() + _line_start;
@@ -27,6 +29,13 @@ void LineBuffer::line_start(int col) {
 
 int LineBuffer::line_start() const {
     return _line_start;
+}
+
+void LineBuffer::word_separators(const std::string& separators) {
+    _word_separators = separators;
+}
+const std::string& LineBuffer::word_separators() const {
+    return _word_separators;
 }
 
 const std::string& LineBuffer::get_text() const {
@@ -69,6 +78,41 @@ bool LineBuffer::move_cursor_left() {
     return false;
 }
 
+void LineBuffer::jump_word_right() {
+    if (buffer.empty() || cursor.col >= full_line_length())
+        return;
+
+    const size_t adjusted_cursor {cursor_to_idx()};
+    size_t idx {std::string::npos};
+    for (const auto c : _word_separators) {
+        size_t char_idx {buffer.find_first_of(c, adjusted_cursor + 1)};
+        idx = std::min(char_idx, idx);
+    }
+
+    if (idx != std::string::npos)
+        cursor.col = idx_to_cursor(idx);
+    else
+        cursor.col = full_line_length();
+}
+
+void LineBuffer::jump_word_left() {
+    if (buffer.empty() || cursor.col <= _line_start)
+        return;
+
+    size_t adjusted_cursor {cursor_to_idx()};
+    size_t idx {0};
+    for (const auto c : _word_separators) {
+        size_t char_idx {buffer.find_last_of(c, adjusted_cursor - 1)};
+        if (char_idx != std::string::npos)
+            idx = std::max(char_idx, idx);
+    }
+
+    if (idx != 0)
+        cursor.col = idx_to_cursor(idx);
+    else
+        cursor.col = _line_start;
+}
+
 void LineBuffer::go_to_line_start() {
     cursor.col = _line_start;
 }
@@ -109,7 +153,7 @@ bool LineBuffer::erase_forward() {
 bool LineBuffer::erase_backwards() {
     if (!buffer.empty() && cursor.col > _line_start) {
         if (cursor.col < full_line_length()) {
-            buffer.erase(cursor_to_idx(), 1);
+            buffer.erase(cursor_to_idx() - 1, 1);
         } else {
             buffer.pop_back();
         }

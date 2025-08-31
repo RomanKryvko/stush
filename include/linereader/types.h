@@ -12,5 +12,5 @@ struct cursor_pos {
     int col {};
 };
 
-using key_code_t = int32_t;
+using key_code_t = int64_t;
 
