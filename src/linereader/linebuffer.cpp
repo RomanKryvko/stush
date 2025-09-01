@@ -104,7 +104,7 @@ void LineBuffer::jump_word_right() {
     const size_t adjusted_cursor {cursor_to_idx()};
     size_t idx {std::string::npos};
     for (const auto c : _word_separators) {
-        size_t char_idx {buffer.stdstr().find_first_of(c, adjusted_cursor + 1)};
+        size_t char_idx {buffer.find_first_of(c, adjusted_cursor + 1)};
         idx = std::min(char_idx, idx);
     }
 
@@ -121,7 +121,7 @@ void LineBuffer::jump_word_left() {
     size_t adjusted_cursor {cursor_to_idx()};
     size_t idx {0};
     for (const auto c : _word_separators) {
-        size_t char_idx {buffer.stdstr().find_last_of(c, adjusted_cursor - 1)};
+        size_t char_idx {buffer.find_last_of(c, adjusted_cursor - 1)};
         if (char_idx != std::string::npos)
             idx = std::max(char_idx, idx);
     }
@@ -186,18 +186,18 @@ bool LineBuffer::erase_word_backwards() {
         return false;
 
     const size_t adjusted_cursor {cursor_to_idx()};
-    size_t space_idx {buffer.stdstr().find_last_of(' ', adjusted_cursor + 1)};
+    size_t space_idx {buffer.find_last_of(' ', adjusted_cursor)};
     if (space_idx == std::string::npos) { // the string has no whitespaces
         return erase_to_beginning();
     }
 
     if (space_idx == adjusted_cursor - 1) { // cursor is on whitespace
-        size_t char_idx {buffer.stdstr().find_last_not_of(' ', adjusted_cursor)};
+        size_t char_idx {buffer.find_last_not_of(' ', adjusted_cursor)};
         if (char_idx == std::string::npos) { // the string consists of whitespaces
             return erase_to_beginning();
         }
 
-        space_idx = buffer.stdstr().find_last_of(' ', char_idx);
+        space_idx = buffer.find_last_of(' ', char_idx - 1);
         if (space_idx == std::string::npos) {
             return erase_to_beginning();
         }
@@ -215,18 +215,18 @@ bool LineBuffer::erase_word_forward() {
         return false;
 
     const size_t adjusted_cursor {cursor_to_idx()};
-    size_t space_idx {buffer.stdstr().find_first_of(' ', adjusted_cursor)};
+    size_t space_idx {buffer.find_first_of(' ', adjusted_cursor)};
     if (space_idx == std::string::npos) { // the string has no whitespaces
         return erase_to_end();
     }
 
     if (space_idx == adjusted_cursor) { // cursor is on whitespace
-        size_t char_idx {buffer.stdstr().find_first_not_of(' ', adjusted_cursor)};
+        size_t char_idx {buffer.find_first_not_of(' ', adjusted_cursor)};
         if (char_idx == std::string::npos) { // the string consists of whitespaces
             return erase_to_end();
         }
 
-        space_idx = buffer.stdstr().find_first_of(' ', char_idx);
+        space_idx = buffer.find_first_of(' ', char_idx);
         if (space_idx == std::string::npos) {
             return erase_to_end();
         }

@@ -35,6 +35,14 @@ target_link_libraries(
     GTest::gtest_main
 )
 
+add_executable(utf8utils_test utf8utils_test.cpp)
+target_include_directories(utf8utils_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+
+target_link_libraries(
+    utf8utils_test
+    GTest::gtest_main
+)
+
 add_executable(utfstring_test)
 target_include_directories(utfstring_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_sources(utfstring_test  PRIVATE
@@ -52,3 +60,4 @@ gtest_discover_tests(parser_test)
 gtest_discover_tests(byteutils_test)
 gtest_discover_tests(linebuffer_test)
 gtest_discover_tests(utfstring_test)
+gtest_discover_tests(utf8utils_test)

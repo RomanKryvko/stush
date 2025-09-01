@@ -1,32 +1,6 @@
 #include <gtest/gtest.h>
-#include <string_view>
 #include "linereader/linebuffer.h"
 #include "linereader/types.h"
-#include "linereader/utf8utils.h"
-
-TEST(Utf8Test, getsLengthRight) {
-    const std::string_view str = "абgdеж";
-    const int exp = 6;
-
-    const auto act = utf8_strlen(str);
-    EXPECT_EQ(act, exp);
-}
-
-TEST(Utf8Test, getsLengthFullAscii) {
-    const std::string_view str = "abcdef";
-    const int exp = 6;
-
-    const auto act = utf8_strlen(str);
-    EXPECT_EQ(act, exp);
-}
-
-TEST(Utf8Test, getsLengthFullUtf8) {
-    const std::string_view str = "абвгде";
-    const int exp = 6;
-
-    const auto act = utf8_strlen(str);
-    EXPECT_EQ(act, exp);
-}
 
 TEST(LineBufferTest, cursorDoesntOvershootLine) {
     LineBuffer linebuffer {}; // buffer is empty initially
@@ -77,6 +51,35 @@ TEST(LineBufferTest, goesToLineEnd) {
     linebuffer.go_to_line_end();
 
     cursor_pos exp {1, (int) test_text.size() + line_start};
+    EXPECT_EQ(linebuffer.cursor_position(), exp);
+}
+
+TEST(LineBufferTest, goesToLineStartUtf8) {
+    LineBuffer linebuffer {}; // buffer is empty initially
+    cursor_pos start {1, 10};
+
+    linebuffer.set_text("абвгде");
+    linebuffer.line_start(2);
+    linebuffer.cursor_position(start);
+    linebuffer.go_to_line_start();
+
+    cursor_pos exp {1, 2};
+    EXPECT_EQ(linebuffer.cursor_position(), exp);
+}
+
+TEST(LineBufferTest, goesToLineEndUtf8) {
+    LineBuffer linebuffer {};
+
+    const std::string test_text {"фывапордлж"};
+    const int line_start {2};
+    const cursor_pos start {1, 1};
+
+    linebuffer.set_text(test_text);
+    linebuffer.line_start(line_start);
+    linebuffer.cursor_position(start);
+    linebuffer.go_to_line_end();
+
+    cursor_pos exp {1, 10 + line_start};
     EXPECT_EQ(linebuffer.cursor_position(), exp);
 }
 
@@ -178,6 +181,20 @@ TEST(LineBufferTest, eraseForwardInMiddle) {
     EXPECT_EQ(linebuffer.cursor_position(), start);
 }
 
+TEST(LineBufferTest, eraseForwardInMiddleUtf8) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 3};
+
+    linebuffer.set_text("абвгдеєжз");
+    linebuffer.line_start(1);
+    linebuffer.cursor_position(start); // on 'в'
+
+    bool status = linebuffer.erase_forward();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), "абгдеєжз");
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
 TEST(LineBufferTest, eraseForwardAtEndDoesNothing) {
     LineBuffer linebuffer {};
     cursor_pos start {1, 3};
@@ -189,6 +206,20 @@ TEST(LineBufferTest, eraseForwardAtEndDoesNothing) {
     bool status = linebuffer.erase_forward();
     EXPECT_FALSE(status);
     EXPECT_EQ(linebuffer.get_text(), "hi");
+    EXPECT_EQ(linebuffer.cursor_position(), start);
+}
+
+TEST(LineBufferTest, eraseForwardAtEndDoesNothingUtf8) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 20};
+
+    linebuffer.set_text("абвгдеєжз");
+    linebuffer.line_start(1);
+    linebuffer.cursor_position(start); // after last char
+
+    bool status = linebuffer.erase_forward();
+    EXPECT_FALSE(status);
+    EXPECT_EQ(linebuffer.get_text(), "абвгдеєжз");
     EXPECT_EQ(linebuffer.cursor_position(), start);
 }
 
@@ -206,12 +237,40 @@ TEST(LineBufferTest, erasesWordBackwards) {
     EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 4));
 }
 
+TEST(LineBufferTest, erasesWordBackwardsUtf8) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 16};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("фывоа  фвлрвсгш");
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), "фывоа ");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 7));
+}
+
+TEST(LineBufferTest, erasesWordBackwardsInMiddleUtf8) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 8};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("фывоа  фвлрвсгш"); // cursor at second 'ф'
+    linebuffer.cursor_position(start);
+
+    bool status = linebuffer.erase_word_backwards();
+    EXPECT_TRUE(status);
+    EXPECT_EQ(linebuffer.get_text(), "фывоа");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 7));
+}
+
 TEST(LineBufferTest, erasesWordBackwardsWithWhitespaces) {
     LineBuffer linebuffer {};
     cursor_pos start {1, 14};
 
     linebuffer.line_start(1);
-    linebuffer.set_text("foo bar      "); // cursor is at the end
+    linebuffer.set_text("foo ббб      "); // cursor is at the end
     linebuffer.cursor_position(start);
 
     bool status = linebuffer.erase_word_backwards();
