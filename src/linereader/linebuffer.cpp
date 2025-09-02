@@ -185,28 +185,23 @@ bool LineBuffer::erase_word_backwards() {
     if (buffer.empty() || cursor.col <= _line_start)
         return false;
 
-    const size_t adjusted_cursor {cursor_to_idx()};
-    size_t space_idx {buffer.find_last_of(' ', adjusted_cursor)};
-    if (space_idx == std::string::npos) { // the string has no whitespaces
+    const size_t init_cur {cursor_to_idx()};
+    size_t cur {init_cur};
+
+    while (cur > 0 && buffer.equals_at(cur - 1, " ")) {
+        cur--;
+    }
+
+    if (cur == 0)
         return erase_to_beginning();
+
+    while (cur > 0 && !buffer.equals_at(cur - 1, " ")) {
+        cur--;
     }
 
-    if (space_idx == adjusted_cursor - 1) { // cursor is on whitespace
-        size_t char_idx {buffer.find_last_not_of(' ', adjusted_cursor)};
-        if (char_idx == std::string::npos) { // the string consists of whitespaces
-            return erase_to_beginning();
-        }
+    cut(cur, init_cur - cur);
+    cursor.col = idx_to_cursor(cur);
 
-        space_idx = buffer.find_last_of(' ', char_idx - 1);
-        if (space_idx == std::string::npos) {
-            return erase_to_beginning();
-        }
-        cut(space_idx, char_idx - adjusted_cursor);
-        cursor.col = idx_to_cursor(space_idx);
-        return true;
-    }
-    cut(space_idx, adjusted_cursor - space_idx);
-    cursor.col = idx_to_cursor(space_idx);
     return true;
 }
 
@@ -214,26 +209,22 @@ bool LineBuffer::erase_word_forward() {
     if (buffer.empty() || cursor.col >= full_line_length())
         return false;
 
-    const size_t adjusted_cursor {cursor_to_idx()};
-    size_t space_idx {buffer.find_first_of(' ', adjusted_cursor)};
-    if (space_idx == std::string::npos) { // the string has no whitespaces
+    const size_t init_cur {cursor_to_idx()};
+    size_t cur {init_cur};
+
+    while (cur < buffer.char_size() && buffer.equals_at(cur, " ")) {
+        cur++;
+    }
+
+    if (cur == buffer.char_size())
         return erase_to_end();
+
+    while (cur < buffer.char_size() && !buffer.equals_at(cur, " ")) {
+        cur++;
     }
 
-    if (space_idx == adjusted_cursor) { // cursor is on whitespace
-        size_t char_idx {buffer.find_first_not_of(' ', adjusted_cursor)};
-        if (char_idx == std::string::npos) { // the string consists of whitespaces
-            return erase_to_end();
-        }
+    cut(init_cur, cur - init_cur);
 
-        space_idx = buffer.find_first_of(' ', char_idx);
-        if (space_idx == std::string::npos) {
-            return erase_to_end();
-        }
-        cut(adjusted_cursor, space_idx - adjusted_cursor);
-        return true;
-    }
-    cut(adjusted_cursor, space_idx - adjusted_cursor);
     return true;
 }
 

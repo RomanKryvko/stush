@@ -35,6 +35,8 @@ public:
 
     std::string at(size_t char_idx) const;
 
+    bool equals_at(size_t char_idx, std::string_view s) const;
+
     void insert(size_t char_idx, std::string_view utf8_char);
     void insert(size_t char_idx, char chr);
     void insert_utf8(size_t char_idx, const utf8string& other);

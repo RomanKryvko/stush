@@ -138,7 +138,14 @@ TEST(UtfStringTest, utfStringRoundTrip) {
     EXPECT_EQ(str.char_size(), 4);
 }
 
-//TODO: FIND TEST
+TEST(Utf8String, equalsAtWorks) {
+    utf8string s("hello world");
+
+    EXPECT_TRUE(s.equals_at(0, "h"));
+    EXPECT_FALSE(s.equals_at(0, "a"));
+    EXPECT_TRUE(s.equals_at(4, "o"));
+    EXPECT_TRUE(s.equals_at(5, " "));
+}
 
 TEST(Utf8StringFindTest, FindFirstOfAscii) {
     utf8string s("hello world");
@@ -213,3 +220,4 @@ TEST(Utf8StringFindTest, EmptyStringCases) {
     EXPECT_EQ(empty.find_first_not_of('a'), std::string::npos);
     EXPECT_EQ(empty.find_last_not_of('a'), std::string::npos);
 }
+

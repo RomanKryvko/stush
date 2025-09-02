@@ -85,6 +85,15 @@ std::string utf8string::at(size_t char_idx) const {
     return buffer.substr(byte_idx, len);
 }
 
+bool utf8string::equals_at(size_t char_idx, std::string_view s) const {
+    const size_t byte_idx {char_to_byte(char_idx)};
+    for (int i = 0; i < s.size(); i++) {
+        if (s.at(i) != buffer.at(byte_idx + i))
+            return false;
+    }
+    return true;
+}
+
 void utf8string::insert(size_t char_idx, std::string_view utf8_char) {
     size_t byte_idx {char_to_byte(char_idx)};
     _char_size += utf8_strlen(utf8_char);

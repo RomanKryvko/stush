@@ -233,8 +233,8 @@ TEST(LineBufferTest, erasesWordBackwards) {
 
     bool status = linebuffer.erase_word_backwards();
     EXPECT_TRUE(status);
-    EXPECT_EQ(linebuffer.get_text(), "foo");
-    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 4));
+    EXPECT_EQ(linebuffer.get_text(), "foo ");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
 }
 
 TEST(LineBufferTest, erasesWordBackwardsUtf8) {
@@ -247,8 +247,8 @@ TEST(LineBufferTest, erasesWordBackwardsUtf8) {
 
     bool status = linebuffer.erase_word_backwards();
     EXPECT_TRUE(status);
-    EXPECT_EQ(linebuffer.get_text(), "фывоа ");
-    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 7));
+    EXPECT_EQ(linebuffer.get_text(), "фывоа  ");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 8));
 }
 
 TEST(LineBufferTest, erasesWordBackwardsInMiddleUtf8) {
@@ -261,8 +261,8 @@ TEST(LineBufferTest, erasesWordBackwardsInMiddleUtf8) {
 
     bool status = linebuffer.erase_word_backwards();
     EXPECT_TRUE(status);
-    EXPECT_EQ(linebuffer.get_text(), "фывоа");
-    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 7));
+    EXPECT_EQ(linebuffer.get_text(), "фвлрвсгш");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 1));
 }
 
 TEST(LineBufferTest, erasesWordBackwardsWithWhitespaces) {
@@ -275,13 +275,13 @@ TEST(LineBufferTest, erasesWordBackwardsWithWhitespaces) {
 
     bool status = linebuffer.erase_word_backwards();
     EXPECT_TRUE(status);
-    EXPECT_EQ(linebuffer.get_text(), "foo");
-    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 4));
+    EXPECT_EQ(linebuffer.get_text(), "foo ");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
 }
 
 TEST(LineBufferTest, erasesAllWhenNoWhitespacesPresent) {
     LineBuffer linebuffer {};
-    cursor_pos start {1, 14};
+    cursor_pos start {1, 13};
 
     linebuffer.line_start(1);
     linebuffer.set_text("foobarfoobar"); // cursor is at the end
@@ -317,8 +317,8 @@ TEST(LineBufferTest, erasesFromWordMiddle) {
 
     bool status = linebuffer.erase_word_backwards();
     EXPECT_TRUE(status);
-    EXPECT_EQ(linebuffer.get_text(), "foo baroo");
-    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 8));
+    EXPECT_EQ(linebuffer.get_text(), "foo bar oo");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 9));
 }
 
 TEST(LineBufferTest, doesntEraseWordWhenBufferEmpty) {
@@ -449,8 +449,8 @@ TEST(LineBufferTest, yanksWord) {
 
     bool status = linebuffer.erase_word_backwards();
 
-    EXPECT_EQ(linebuffer.get_text(), "test");
-    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
+    EXPECT_EQ(linebuffer.get_text(), "test ");
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 6));
 
     status &= linebuffer.paste();
 
