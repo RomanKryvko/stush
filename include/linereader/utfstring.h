@@ -36,6 +36,7 @@ public:
     std::string at(size_t char_idx) const;
 
     bool equals_at(size_t char_idx, std::string_view s) const;
+    bool equals_at(size_t char_idx, char s) const;
 
     void insert(size_t char_idx, std::string_view utf8_char);
     void insert(size_t char_idx, char chr);

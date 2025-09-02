@@ -1,7 +1,7 @@
 #include "linereader/linebuffer.h"
 #include "byteutils.h"
-#include <algorithm>
 #include <cstddef>
+#include <cstdlib>
 #include <string>
 
 inline int LineBuffer::full_line_length() const {
@@ -103,33 +103,60 @@ void LineBuffer::jump_word_right() {
 
     const size_t adjusted_cursor {cursor_to_idx()};
     size_t idx {std::string::npos};
+
+    char selected_char {};
     for (const auto c : _word_separators) {
-        size_t char_idx {buffer.find_first_of(c, adjusted_cursor + 1)};
-        idx = std::min(char_idx, idx);
+        size_t cur {adjusted_cursor + 1};
+        while (cur < buffer.char_size() && !buffer.equals_at(cur, c)) {
+            cur++;
+        }
+
+        if (cur < idx) {
+            idx = cur;
+            selected_char = c;
+        }
     }
 
-    if (idx != std::string::npos)
-        cursor.col = idx_to_cursor(idx);
-    else
+    if (idx == buffer.char_size()) {
         cursor.col = full_line_length();
+    } else {
+        // Skip same separators
+        while (idx < buffer.char_size() && buffer.equals_at(idx + 1, selected_char)) {
+            idx++;
+        }
+        cursor.col = idx_to_cursor(idx);
+    }
 }
 
 void LineBuffer::jump_word_left() {
     if (buffer.empty() || cursor.col <= _line_start)
         return;
 
-    size_t adjusted_cursor {cursor_to_idx()};
+    const size_t adjusted_cursor {cursor_to_idx()};
     size_t idx {0};
+
+    char selected_char {};
     for (const auto c : _word_separators) {
-        size_t char_idx {buffer.find_last_of(c, adjusted_cursor - 1)};
-        if (char_idx != std::string::npos)
-            idx = std::max(char_idx, idx);
+        size_t cur {adjusted_cursor - 1};
+        while (cur > 0 && !buffer.equals_at(cur, c)) {
+            cur--;
+        }
+
+        if (cur > idx) {
+            idx = cur;
+            selected_char = c;
+        }
     }
 
-    if (idx != 0)
-        cursor.col = idx_to_cursor(idx);
-    else
+    if (idx <= 0) {
         cursor.col = _line_start;
+    } else {
+        // Skip same separators
+        while (idx > 0 && buffer.equals_at(idx - 1, selected_char)) {
+            idx--;
+        }
+        cursor.col = idx_to_cursor(idx);
+    }
 }
 
 void LineBuffer::go_to_line_start() {

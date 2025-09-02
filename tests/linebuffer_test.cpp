@@ -472,6 +472,19 @@ TEST(LineBufferTest, jumpsWordLeft) {
     EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
 }
 
+TEST(LineBufferTest, jumpsWordLeftAndSkipsSameChars) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 18};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("test              test2");
+    linebuffer.cursor_position(start);
+
+    linebuffer.jump_word_left();
+
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
+}
+
 TEST(LineBufferTest, jumpsWordRight) {
     LineBuffer linebuffer {};
     cursor_pos start {1, 1};
@@ -483,6 +496,19 @@ TEST(LineBufferTest, jumpsWordRight) {
     linebuffer.jump_word_right();
 
     EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 5));
+}
+
+TEST(LineBufferTest, jumpsWordRightAndSkipsSameChars) {
+    LineBuffer linebuffer {};
+    cursor_pos start {1, 1};
+
+    linebuffer.line_start(1);
+    linebuffer.set_text("test              test2");
+    linebuffer.cursor_position(start);
+
+    linebuffer.jump_word_right();
+
+    EXPECT_EQ(linebuffer.cursor_position(), cursor_pos(1, 18));
 }
 
 TEST(LineBufferTest, jumpsWordNoSeparators) {

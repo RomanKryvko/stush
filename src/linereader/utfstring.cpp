@@ -94,6 +94,11 @@ bool utf8string::equals_at(size_t char_idx, std::string_view s) const {
     return true;
 }
 
+bool utf8string::equals_at(size_t char_idx, char s) const {
+    const size_t byte_idx {char_to_byte(char_idx)};
+    return buffer.at(byte_idx) == s;
+}
+
 void utf8string::insert(size_t char_idx, std::string_view utf8_char) {
     size_t byte_idx {char_to_byte(char_idx)};
     _char_size += utf8_strlen(utf8_char);
@@ -180,7 +185,6 @@ void utf8string::pop_back() {
 }
 
 utf8string utf8string::substr(size_t pos, size_t n) const {
-    // Mimics behavior of std::string::erase
     if (buffer.empty() && pos == 0 && n == std::string::npos)
         return *this;
 
