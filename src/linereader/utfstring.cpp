@@ -191,8 +191,6 @@ size_t utf8string::find_last_of(char c, size_t pos) const {
     const size_t byte_idx = char_to_byte(pos);
 
     const size_t res {buffer.find_last_of(c, byte_idx)};
-    if (res == std::string::npos)
-        return res;
 
     return byte_to_char(res); //TODO:  find a better performing way to do it
 }
@@ -201,8 +199,6 @@ size_t utf8string::find_last_not_of(char c, size_t pos) const {
     const size_t byte_idx = char_to_byte(pos);
 
     const size_t res {buffer.find_last_not_of(c, byte_idx)};
-    if (res == std::string::npos)
-        return res;
 
     return byte_to_char(res);
 }
@@ -211,8 +207,6 @@ size_t utf8string::find_last_of(std::string_view s, size_t pos) const {
     const size_t byte_idx = char_to_byte(pos);
 
     const size_t res {buffer.find_last_of(s, byte_idx)};
-    if (res == std::string::npos)
-        return res;
 
     return byte_to_char(res);
 }
@@ -221,8 +215,6 @@ size_t utf8string::find_last_not_of(std::string_view s, size_t pos) const {
     const size_t byte_idx = char_to_byte(pos);
 
     const size_t res {buffer.find_last_not_of(s, byte_idx)};
-    if (res == std::string::npos)
-        return res;
 
     return byte_to_char(res);
 }
@@ -231,8 +223,6 @@ size_t utf8string::find_first_of(char c, size_t pos) const {
     const size_t byte_idx = char_to_byte(pos);
 
     const size_t res {buffer.find_first_of(c, byte_idx)};
-    if (res == std::string::npos)
-        return res;
 
     return byte_to_char(res);
 }
@@ -241,8 +231,6 @@ size_t utf8string::find_first_not_of(char c, size_t pos) const {
     const size_t byte_idx = char_to_byte(pos);
 
     const size_t res {buffer.find_first_not_of(c, byte_idx)};
-    if (res == std::string::npos)
-        return res;
 
     return byte_to_char(res);
 }
@@ -251,8 +239,6 @@ size_t utf8string::find_first_of(std::string_view s, size_t pos) const {
     const size_t byte_idx = char_to_byte(pos);
 
     const size_t res {buffer.find_first_of(s, byte_idx)};
-    if (res == std::string::npos)
-        return res;
 
     return byte_to_char(res);
 }
@@ -261,8 +247,6 @@ size_t utf8string::find_first_not_of(std::string_view s, size_t pos) const {
     const size_t byte_idx = char_to_byte(pos);
 
     const size_t res {buffer.find_first_not_of(s, byte_idx)};
-    if (res == std::string::npos)
-        return res;
 
     return byte_to_char(res);
 }
