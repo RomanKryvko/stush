@@ -139,12 +139,12 @@ TEST(UtfStringTest, utfStringRoundTrip) {
 }
 
 TEST(Utf8String, equalsAtWorks) {
-    utf8string s("hello world");
+    utf8string s("hello Ф world");
 
-    EXPECT_TRUE(s.equals_at(0, "h"));
-    EXPECT_FALSE(s.equals_at(0, "a"));
-    EXPECT_TRUE(s.equals_at(4, "o"));
-    EXPECT_TRUE(s.equals_at(5, " "));
+    EXPECT_EQ(s.at(0), 'h');
+    EXPECT_NE(s.at(0), 'a');
+    EXPECT_EQ(s.at(4), 'o');
+    EXPECT_EQ(s.at(6), U'Ф');
 }
 
 TEST(Utf8StringFindTest, FindFirstOfAscii) {

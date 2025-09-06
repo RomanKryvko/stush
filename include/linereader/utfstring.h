@@ -33,10 +33,7 @@ public:
     size_t char_to_byte(size_t char_idx) const;
     size_t byte_to_char(size_t byte_idx) const;
 
-    std::string at(size_t char_idx) const;
-
-    bool equals_at(size_t char_idx, std::string_view s) const;
-    bool equals_at(size_t char_idx, char s) const;
+    char32_t at(size_t char_idx) const;
 
     void insert(size_t char_idx, std::string_view utf8_char);
     void insert(size_t char_idx, char chr);

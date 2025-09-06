@@ -107,7 +107,7 @@ void LineBuffer::jump_word_right() {
     char selected_char {};
     for (const auto c : _word_separators) {
         size_t cur {adjusted_cursor + 1};
-        while (cur < buffer.char_size() && !buffer.equals_at(cur, c)) {
+        while (cur < buffer.char_size() && buffer.at(cur) != c) {
             cur++;
         }
 
@@ -121,7 +121,7 @@ void LineBuffer::jump_word_right() {
         cursor.col = full_line_length();
     } else {
         // Skip same separators
-        while (idx < buffer.char_size() && buffer.equals_at(idx + 1, selected_char)) {
+        while (idx < buffer.char_size() && buffer.at(idx + 1) == selected_char) {
             idx++;
         }
         cursor.col = idx_to_cursor(idx);
@@ -138,7 +138,7 @@ void LineBuffer::jump_word_left() {
     char selected_char {};
     for (const auto c : _word_separators) {
         size_t cur {adjusted_cursor - 1};
-        while (cur > 0 && !buffer.equals_at(cur, c)) {
+        while (cur > 0 && buffer.at(cur) != c) {
             cur--;
         }
 
@@ -152,7 +152,7 @@ void LineBuffer::jump_word_left() {
         cursor.col = _line_start;
     } else {
         // Skip same separators
-        while (idx > 0 && buffer.equals_at(idx - 1, selected_char)) {
+        while (idx > 0 && buffer.at(idx - 1) == selected_char) {
             idx--;
         }
         cursor.col = idx_to_cursor(idx);
@@ -215,14 +215,14 @@ bool LineBuffer::erase_word_backwards() {
     const size_t init_cur {cursor_to_idx()};
     size_t cur {init_cur};
 
-    while (cur > 0 && buffer.equals_at(cur - 1, " ")) {
+    while (cur > 0 && buffer.at(cur - 1) == ' ') {
         cur--;
     }
 
     if (cur == 0)
         return erase_to_beginning();
 
-    while (cur > 0 && !buffer.equals_at(cur - 1, " ")) {
+    while (cur > 0 && buffer.at(cur - 1) != ' ') {
         cur--;
     }
 
@@ -239,14 +239,14 @@ bool LineBuffer::erase_word_forward() {
     const size_t init_cur {cursor_to_idx()};
     size_t cur {init_cur};
 
-    while (cur < buffer.char_size() && buffer.equals_at(cur, " ")) {
+    while (cur < buffer.char_size() && buffer.at(cur) == ' ') {
         cur++;
     }
 
     if (cur == buffer.char_size())
         return erase_to_end();
 
-    while (cur < buffer.char_size() && !buffer.equals_at(cur, " ")) {
+    while (cur < buffer.char_size() && buffer.at(cur) != ' ') {
         cur++;
     }
 

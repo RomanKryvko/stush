@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <sys/types.h>
 
 std::string utf8string::get_out_of_range_msg(int idx) const {
     return "Idx " + std::to_string(idx) +
@@ -76,27 +77,41 @@ size_t utf8string::byte_to_char(size_t byte_idx) const {
     return chars;
 }
 
-std::string utf8string::at(size_t char_idx) const {
-    size_t byte_idx {char_to_byte(char_idx)};
+char32_t utf8string::at(size_t char_idx) const {
+    const size_t byte_idx {char_to_byte(char_idx)};
     if (byte_idx >= buffer.size())
         throw std::out_of_range(get_out_of_range_msg(byte_idx));
 
-    int len {utf8_seq_length((uint8_t)buffer.at(byte_idx))};
-    return buffer.substr(byte_idx, len);
-}
-
-bool utf8string::equals_at(size_t char_idx, std::string_view s) const {
-    const size_t byte_idx {char_to_byte(char_idx)};
-    for (int i = 0; i < s.size(); i++) {
-        if (s.at(i) != buffer.at(byte_idx + i))
-            return false;
+    const unsigned char c {(unsigned char)(buffer.at(byte_idx))};
+    const int len {utf8_seq_length(c)};
+    if (len == 1) {
+        return c;
     }
-    return true;
-}
 
-bool utf8string::equals_at(size_t char_idx, char s) const {
-    const size_t byte_idx {char_to_byte(char_idx)};
-    return buffer.at(byte_idx) == s;
+    char32_t codepoint {};
+    switch (len) {
+        case 2: {
+            codepoint  = (c & 0x1F) << 6;
+            codepoint |= ((unsigned char)(buffer[byte_idx+1]) & 0x3F);
+            break;
+        }
+        case 3: {
+            codepoint  = (c & 0x0F) << 12;
+            codepoint |= ((unsigned char)(buffer[byte_idx+1]) & 0x3F) << 6;
+            codepoint |= ((unsigned char)(buffer[byte_idx+2]) & 0x3F);
+            break;
+        }
+        case 4: {
+            codepoint  = (c & 0x07) << 18;
+            codepoint |= ((unsigned char)(buffer[byte_idx+1]) & 0x3F) << 12;
+            codepoint |= ((unsigned char)(buffer[byte_idx+2]) & 0x3F) << 6;
+            codepoint |= ((unsigned char)(buffer[byte_idx+3]) & 0x3F);
+            break;
+        }
+        //TODO: handle invalid characters
+    }
+
+    return codepoint;
 }
 
 void utf8string::insert(size_t char_idx, std::string_view utf8_char) {
