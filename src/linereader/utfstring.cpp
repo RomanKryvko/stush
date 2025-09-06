@@ -9,8 +9,9 @@
 
 std::string utf8string::get_out_of_range_msg(int idx) const {
     return "Idx " + std::to_string(idx) +
-    " can not be greater then byte size (" +
-    std::to_string(buffer.size()) + ")";
+    " can not be greater than byte size (" +
+    std::to_string(buffer.size()) + "), char size " +
+    std::to_string(_char_size);
 }
 
 utf8string::utf8string() = default;
