@@ -38,14 +38,14 @@ public:
 
         char32_t operator*() const {
             if (!buf || byte_index >= buf->size()) return -1;
-            return char_at(*buf, byte_index);
+            return utf8utils::char_at(*buf, byte_index);
         }
 
         // Prefix
         basic_iterator& operator++() {
             if (buf && byte_index < buf->size()) {
                 const unsigned char c {static_cast<unsigned char>((*buf)[byte_index])};
-                byte_index += utf8_seq_length(c);
+                byte_index += utf8utils::utf8_seq_length(c);
             }
             return *this;
         }
@@ -62,7 +62,7 @@ public:
             while (buf && byte_index > 0) {
                 byte_index--;
                 const unsigned char c {static_cast<unsigned char>((*buf)[byte_index])};
-                if (is_lead(c) || !is_ascii(c))
+                if (utf8utils::is_lead(c))
                     break;
             }
             return *this;

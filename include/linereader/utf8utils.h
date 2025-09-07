@@ -4,9 +4,7 @@
 #include <string>
 #include <string_view>
 
-constexpr bool is_ascii(uint8_t c) {
-    return c < 0x7F;
-}
+namespace utf8utils {
 
 constexpr bool is_lead(uint8_t c) {
     //NOTE: 0xC0-0xC1 and 0xF5-0xFF are unused
@@ -64,7 +62,7 @@ constexpr char32_t char_at(std::string_view str, size_t byte_idx) {
     return codepoint;
 }
 
-constexpr int append_char32_t(std::string& str, char32_t c) {
+constexpr int append(std::string& str, char32_t c) {
     if (c <= 0x7F) {
         str += c;
         return 1;
@@ -85,4 +83,6 @@ constexpr int append_char32_t(std::string& str, char32_t c) {
         return 4;
     }
     return 1; //TODO: handle invalid characters
+}
+
 }

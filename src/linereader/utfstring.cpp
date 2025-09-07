@@ -34,17 +34,17 @@ utf8string::utf8string() = default;
 
 utf8string::utf8string(const std::string& str) :
     buffer(str),
-    _char_size(utf8_strlen(str))
+    _char_size(utf8utils::utf8_strlen(str))
 { }
 
 utf8string::utf8string(const char* str) :
     buffer(str),
-    _char_size(utf8_strlen(str))
+    _char_size(utf8utils::utf8_strlen(str))
 { }
 
 utf8string::utf8string(std::string_view str) :
     buffer(str),
-    _char_size(utf8_strlen(str))
+    _char_size(utf8utils::utf8_strlen(str))
 { }
 
 size_t utf8string::byte_size() const {
@@ -65,7 +65,7 @@ const std::string& utf8string::stdstr() const {
 
 void utf8string::stdstr(const std::string& str) {
     buffer = str;
-    _char_size = utf8_strlen(buffer);
+    _char_size = utf8utils::utf8_strlen(buffer);
 }
 
 size_t utf8string::char_to_byte(size_t char_idx) const {
@@ -75,7 +75,7 @@ size_t utf8string::char_to_byte(size_t char_idx) const {
     size_t i {};
     size_t chars {};
     while (i < buffer.size() && chars < char_idx) {
-        i += utf8_seq_length((uint8_t)buffer.at(i));
+        i += utf8utils::utf8_seq_length((uint8_t)buffer.at(i));
         chars++;
     }
     return i;
@@ -88,7 +88,7 @@ size_t utf8string::byte_to_char(size_t byte_idx) const {
     size_t bytes {};
     size_t chars {};
     while (bytes < byte_idx) {
-        bytes += utf8_seq_length((uint8_t)buffer.at(bytes));
+        bytes += utf8utils::utf8_seq_length((uint8_t)buffer.at(bytes));
         chars++;
     }
     return chars;
@@ -99,12 +99,12 @@ char32_t utf8string::at(size_t char_idx) const {
     if (byte_idx >= buffer.size())
         throw std::out_of_range(get_out_of_range_msg(byte_idx));
 
-    return char_at(buffer, byte_idx);
+    return utf8utils::char_at(buffer, byte_idx);
 }
 
 void utf8string::insert(size_t char_idx, std::string_view utf8_char) {
     size_t byte_idx {char_to_byte(char_idx)};
-    _char_size += utf8_strlen(utf8_char);
+    _char_size += utf8utils::utf8_strlen(utf8_char);
     buffer.insert(byte_idx, utf8_char);
 }
 
@@ -126,7 +126,7 @@ void utf8string::erase_at(size_t pos) {
     if (byte_idx >= buffer.size())
         throw std::out_of_range(get_out_of_range_msg(byte_idx));
 
-    int len {utf8_seq_length((uint8_t)buffer.at(byte_idx))};
+    int len {utf8utils::utf8_seq_length((uint8_t)buffer.at(byte_idx))};
     _char_size--;
     buffer.erase(byte_idx, len);
 }
@@ -153,7 +153,7 @@ void utf8string::erase(size_t pos, size_t n) {
 }
 
 utf8string& utf8string::append(std::string_view str) {
-    _char_size += utf8_strlen(str);
+    _char_size += utf8utils::utf8_strlen(str);
     buffer += str;
     return *this;
 }
@@ -197,7 +197,7 @@ utf8string& utf8string::operator +(char32_t c) {
 }
 
 utf8string& utf8string::append_char32(char32_t c) {
-    _char_size += append_char32_t(buffer, c);
+    _char_size += utf8utils::append(buffer, c);
     return  *this;
 }
 

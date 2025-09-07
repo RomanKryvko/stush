@@ -1,6 +1,8 @@
 #include "linereader/utf8utils.h"
 #include <gtest/gtest.h>
 
+using namespace utf8utils;
+
 TEST(Utf8Test, getsLengthRight) {
     const std::string_view str = "абgdеж";
     const int exp = 6;
