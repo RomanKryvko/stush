@@ -9,6 +9,8 @@
 class utf8string {
     std::string buffer {};
     size_t _char_size {};
+    mutable size_t last_char {};
+    mutable size_t last_byte {};
 
     std::string get_out_of_range_msg(int idx) const;
     utf8string& append_utf8(const utf8string& other);

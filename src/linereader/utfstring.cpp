@@ -74,31 +74,51 @@ const std::string& utf8string::stdstr() const {
 void utf8string::stdstr(const std::string& str) {
     buffer = str;
     _char_size = utf8utils::utf8_strlen(buffer);
+    last_char = 0;
+    last_byte = 0;
 }
 
 size_t utf8string::char_to_byte(size_t char_idx) const {
     if (char_idx == std::string::npos)
         return char_idx;
 
-    size_t i {};
-    size_t chars {};
-    while (i < buffer.size() && chars < char_idx) {
-        i += utf8utils::utf8_seq_length((uint8_t)buffer.at(i));
+    if (char_idx == last_char)
+        return last_byte;
+
+    size_t bytes {last_byte};
+    size_t chars {last_char};
+    if (chars > char_idx) {
+        chars = 0;
+        bytes = 0;
+    }
+    while (bytes < buffer.size() && chars < char_idx) {
+        bytes += utf8utils::utf8_seq_length((uint8_t)buffer.at(bytes));
         chars++;
     }
-    return i;
+    last_char = chars;
+    last_byte = bytes;
+    return bytes;
 }
 
 size_t utf8string::byte_to_char(size_t byte_idx) const {
     if (byte_idx == std::string::npos)
         return byte_idx;
 
-    size_t bytes {};
-    size_t chars {};
+    if (byte_idx == last_byte)
+        return last_char;
+
+    size_t bytes {last_byte};
+    size_t chars {last_char};
+    if (bytes > byte_idx) {
+        chars = 0;
+        bytes = 0;
+    }
     while (bytes < byte_idx) {
         bytes += utf8utils::utf8_seq_length((uint8_t)buffer.at(bytes));
         chars++;
     }
+    last_char = chars;
+    last_byte = bytes;
     return chars;
 }
 
@@ -114,18 +134,33 @@ void utf8string::insert(size_t char_idx, std::string_view utf8_char) {
     size_t byte_idx {char_to_byte(char_idx)};
     _char_size += utf8utils::utf8_strlen(utf8_char);
     buffer.insert(byte_idx, utf8_char);
+
+    if (char_idx < last_char) {
+        last_byte = 0;
+        last_char = 0;
+    }
 }
 
 void utf8string::insert(size_t char_idx, char chr) {
     size_t byte_idx {char_to_byte(char_idx)};
     _char_size++;
     buffer.insert(byte_idx, 1, chr);
+
+    if (char_idx < last_char) {
+        last_byte = 0;
+        last_char = 0;
+    }
 }
 
 void utf8string::insert_utf8(size_t char_idx, const utf8string& other) {
     size_t byte_idx {char_to_byte(char_idx)};
     _char_size += other.char_size();
     buffer.insert(byte_idx, other.stdstr());
+
+    if (char_idx < last_char) {
+        last_byte = 0;
+        last_char = 0;
+    }
 }
 
 // Erase single UTF-8 character at idx
@@ -137,6 +172,11 @@ void utf8string::erase_at(size_t pos) {
     int len {utf8utils::utf8_seq_length((uint8_t)buffer.at(byte_idx))};
     _char_size--;
     buffer.erase(byte_idx, len);
+
+    if (pos < last_char) {
+        last_byte = 0;
+        last_char = 0;
+    }
 }
 
 void utf8string::erase(size_t pos, size_t n) {
@@ -158,6 +198,11 @@ void utf8string::erase(size_t pos, size_t n) {
     auto diff {end_idx - start_idx};
     buffer.erase(start_idx, diff);
     _char_size -= n;
+
+    if (pos < last_char) {
+        last_byte = 0;
+        last_char = 0;
+    }
 }
 
 utf8string& utf8string::append(std::string_view str) {
