@@ -14,6 +14,22 @@ std::string utf8string::get_out_of_range_msg(int idx) const {
     std::to_string(_char_size);
 }
 
+utf8string::iterator utf8string::begin() {
+    return iterator(&buffer, 0);
+}
+
+utf8string::iterator utf8string::end() {
+    return iterator(&buffer, buffer.size());
+}
+
+utf8string::const_iterator utf8string::cbegin() const {
+    return const_iterator(&buffer, 0);
+}
+
+utf8string::const_iterator utf8string::cend() const {
+    return const_iterator(&buffer, buffer.size());
+}
+
 utf8string::utf8string() = default;
 
 utf8string::utf8string(const std::string& str) :
@@ -83,36 +99,7 @@ char32_t utf8string::at(size_t char_idx) const {
     if (byte_idx >= buffer.size())
         throw std::out_of_range(get_out_of_range_msg(byte_idx));
 
-    const unsigned char c {(unsigned char)(buffer.at(byte_idx))};
-    const int len {utf8_seq_length(c)};
-    if (len == 1) {
-        return c;
-    }
-
-    char32_t codepoint {};
-    switch (len) {
-        case 2: {
-            codepoint  = (c & 0x1F) << 6;
-            codepoint |= ((unsigned char)(buffer[byte_idx+1]) & 0x3F);
-            break;
-        }
-        case 3: {
-            codepoint  = (c & 0x0F) << 12;
-            codepoint |= ((unsigned char)(buffer[byte_idx+1]) & 0x3F) << 6;
-            codepoint |= ((unsigned char)(buffer[byte_idx+2]) & 0x3F);
-            break;
-        }
-        case 4: {
-            codepoint  = (c & 0x07) << 18;
-            codepoint |= ((unsigned char)(buffer[byte_idx+1]) & 0x3F) << 12;
-            codepoint |= ((unsigned char)(buffer[byte_idx+2]) & 0x3F) << 6;
-            codepoint |= ((unsigned char)(buffer[byte_idx+3]) & 0x3F);
-            break;
-        }
-        //TODO: handle invalid characters
-    }
-
-    return codepoint;
+    return char_at(buffer, byte_idx);
 }
 
 void utf8string::insert(size_t char_idx, std::string_view utf8_char) {
@@ -171,6 +158,14 @@ utf8string& utf8string::append(std::string_view str) {
     return *this;
 }
 
+bool utf8string::operator ==(const utf8string& other) const {
+    return buffer == other.buffer;
+}
+
+bool utf8string::operator !=(const utf8string& other) const {
+    return !(buffer == other.buffer);
+}
+
 utf8string& utf8string::operator +=(std::string_view str) {
     return append(str);
 }
@@ -191,6 +186,19 @@ utf8string& utf8string::operator +=(const utf8string& other) {
 
 utf8string& utf8string::operator +(const utf8string& other) {
     return append_utf8(other);
+}
+
+utf8string& utf8string::operator +=(char32_t c) {
+    return append_char32(c);
+}
+
+utf8string& utf8string::operator +(char32_t c) {
+    return append_char32(c);
+}
+
+utf8string& utf8string::append_char32(char32_t c) {
+    _char_size += append_char32_t(buffer, c);
+    return  *this;
 }
 
 void utf8string::pop_back() {

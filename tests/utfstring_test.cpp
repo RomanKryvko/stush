@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <linereader/utfstring.h>
 #include <gtest/gtest.h>
 
@@ -147,6 +148,19 @@ TEST(Utf8String, equalsAtWorks) {
     EXPECT_EQ(s.at(6), U'Ф');
 }
 
+TEST(Utf8String, appendWorks) {
+    utf8string s("h");
+
+    s += 'e';
+    EXPECT_EQ(s.stdstr(), "he");
+
+    s.append("llo");
+    EXPECT_EQ(s.stdstr(), "hello");
+
+    s += U'ф';
+    EXPECT_EQ(s.stdstr(), "helloф");
+}
+
 TEST(Utf8StringFindTest, FindFirstOfAscii) {
     utf8string s("hello world");
     EXPECT_EQ(s.find_first_of('o'), 4);
@@ -221,3 +235,21 @@ TEST(Utf8StringFindTest, EmptyStringCases) {
     EXPECT_EQ(empty.find_last_not_of('a'), std::string::npos);
 }
 
+TEST(Utf8StringIterTest, satisfiesRangeFor) {
+
+    utf8string exp {"абвгде"};
+
+    utf8string act {};
+    for (const auto c : exp) {
+        act += c;
+    }
+    EXPECT_EQ(exp, act);
+}
+
+TEST(Utf8StringIterTest, satisfiesFind) {
+    utf8string str {"абвгде"};
+
+    auto act = std::find(str.cbegin(), str.cend(), U'в');
+    EXPECT_EQ(*act, U'в');
+    EXPECT_EQ(*(++act), U'г');
+}
