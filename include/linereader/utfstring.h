@@ -62,7 +62,7 @@ public:
             while (buf && byte_index > 0) {
                 byte_index--;
                 const unsigned char c {static_cast<unsigned char>((*buf)[byte_index])};
-                if (utf8utils::is_lead(c))
+                if (utf8utils::is_lead(c) || isascii(c))
                     break;
             }
             return *this;
@@ -87,6 +87,9 @@ public:
 
     const_iterator cbegin() const;
     const_iterator cend() const;
+
+    iterator it_at(size_t pos);
+    const_iterator cit_at(size_t pos) const;
 
     utf8string();
     utf8string(const std::string& str);

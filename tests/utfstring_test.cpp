@@ -252,4 +252,15 @@ TEST(Utf8StringIterTest, satisfiesFind) {
     auto act = std::find(str.cbegin(), str.cend(), U'в');
     EXPECT_EQ(*act, U'в');
     EXPECT_EQ(*(++act), U'г');
+    EXPECT_EQ(*(--act), U'в');
+}
+
+TEST(Utf8StringIterTest, satisfiesFindAscii) {
+    utf8string str {"abcdefg"};
+
+    auto act = std::find(str.cbegin(), str.cend(), 'f');
+    EXPECT_EQ(*act, U'f');
+    EXPECT_EQ(*(++act), U'g');
+    EXPECT_EQ(*(--act), U'f');
+    EXPECT_EQ(*(--act), U'e');
 }

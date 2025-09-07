@@ -2,6 +2,7 @@
 #include "byteutils.h"
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <string>
 
 inline int LineBuffer::full_line_length() const {
@@ -102,29 +103,33 @@ void LineBuffer::jump_word_right() {
         return;
 
     const size_t adjusted_cursor {cursor_to_idx()};
-    size_t idx {std::string::npos};
+    size_t res_idx {std::string::npos};
 
     char selected_char {};
     for (const auto c : _word_separators) {
         size_t cur {adjusted_cursor + 1};
-        while (cur < buffer.char_size() && buffer.at(cur) != c) {
+        auto it {buffer.cit_at(cur)};
+        while (cur < buffer.char_size() && *it != c) {
             cur++;
+            it++;
         }
 
-        if (cur < idx) {
-            idx = cur;
+        if (cur < res_idx) {
+            res_idx = cur;
             selected_char = c;
         }
     }
 
-    if (idx == buffer.char_size()) {
+    if (res_idx == buffer.char_size()) {
         cursor.col = full_line_length();
     } else {
+        auto it {buffer.cit_at(res_idx + 1)};
         // Skip same separators
-        while (idx < buffer.char_size() && buffer.at(idx + 1) == selected_char) {
-            idx++;
+        while (res_idx < buffer.char_size() && *it == selected_char) {
+            res_idx++;
+            it++;
         }
-        cursor.col = idx_to_cursor(idx);
+        cursor.col = idx_to_cursor(res_idx);
     }
 }
 
@@ -133,29 +138,34 @@ void LineBuffer::jump_word_left() {
         return;
 
     const size_t adjusted_cursor {cursor_to_idx()};
-    size_t idx {0};
+    size_t res_idx {0};
 
     char selected_char {};
     for (const auto c : _word_separators) {
         size_t cur {adjusted_cursor - 1};
-        while (cur > 0 && buffer.at(cur) != c) {
+        auto it {buffer.cit_at(cur)};
+        while (cur > 0 && *it != c) {
+            std::wcout << (wchar_t)*it << "\n";
             cur--;
+            it--;
         }
 
-        if (cur > idx) {
-            idx = cur;
+        if (cur > res_idx) {
+            res_idx = cur;
             selected_char = c;
         }
     }
 
-    if (idx <= 0) {
+    if (res_idx <= 0) {
         cursor.col = _line_start;
     } else {
+        auto it {buffer.cit_at(res_idx - 1)};
         // Skip same separators
-        while (idx > 0 && buffer.at(idx - 1) == selected_char) {
-            idx--;
+        while (res_idx > 0 && *it == selected_char) {
+            res_idx--;
+            it--;
         }
-        cursor.col = idx_to_cursor(idx);
+        cursor.col = idx_to_cursor(res_idx);
     }
 }
 
@@ -214,16 +224,19 @@ bool LineBuffer::erase_word_backwards() {
 
     const size_t init_cur {cursor_to_idx()};
     size_t cur {init_cur};
+    auto it {buffer.cit_at(cur - 1)};
 
-    while (cur > 0 && buffer.at(cur - 1) == ' ') {
+    while (cur > 0 && *it == ' ') {
         cur--;
+        it--;
     }
 
     if (cur == 0)
         return erase_to_beginning();
 
-    while (cur > 0 && buffer.at(cur - 1) != ' ') {
+    while (cur > 0 && *it != ' ') {
         cur--;
+        it--;
     }
 
     cut(cur, init_cur - cur);
@@ -238,16 +251,19 @@ bool LineBuffer::erase_word_forward() {
 
     const size_t init_cur {cursor_to_idx()};
     size_t cur {init_cur};
+    auto it {buffer.cit_at(cur)};
 
-    while (cur < buffer.char_size() && buffer.at(cur) == ' ') {
+    while (cur < buffer.char_size() && *it == ' ') {
         cur++;
+        it++;
     }
 
     if (cur == buffer.char_size())
         return erase_to_end();
 
-    while (cur < buffer.char_size() && buffer.at(cur) != ' ') {
+    while (cur < buffer.char_size() && *it != ' ') {
         cur++;
+        it++;
     }
 
     cut(init_cur, cur - init_cur);

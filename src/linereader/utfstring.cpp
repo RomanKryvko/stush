@@ -30,6 +30,14 @@ utf8string::const_iterator utf8string::cend() const {
     return const_iterator(&buffer, buffer.size());
 }
 
+utf8string::iterator utf8string::it_at(size_t pos) {
+    return iterator(&buffer, char_to_byte(pos));
+}
+
+utf8string::const_iterator utf8string::cit_at(size_t pos) const {
+    return const_iterator(&buffer, char_to_byte(pos));
+}
+
 utf8string::utf8string() = default;
 
 utf8string::utf8string(const std::string& str) :
