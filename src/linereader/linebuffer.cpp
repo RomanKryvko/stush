@@ -2,7 +2,6 @@
 #include "byteutils.h"
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
 #include <string>
 
 inline int LineBuffer::full_line_length() const {
@@ -145,7 +144,6 @@ void LineBuffer::jump_word_left() {
         size_t cur {adjusted_cursor - 1};
         auto it {buffer.cit_at(cur)};
         while (cur > 0 && *it != c) {
-            std::wcout << (wchar_t)*it << "\n";
             cur--;
             it--;
         }
