@@ -16,7 +16,7 @@ int try_cd(const fs::path& path) {
     }
 }
 
-int com_cd(const std::vector<std::string>& args) {
+int com_cd(const args_container& args) {
     if (args.size() == 1) {
         char* home = getenv("HOME");
         if (home && fs::is_directory(home)) {

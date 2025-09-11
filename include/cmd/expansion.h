@@ -1,9 +1,6 @@
 #pragma once
 
 #include <string>
-#include <vector>
-
-using args_container = std::vector<std::string>;
 
 const char VAR_PREFIX = '$';
 const char ESCAPE_CHAR = '\\';

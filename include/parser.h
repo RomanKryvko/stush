@@ -1,7 +1,6 @@
 #pragma once
 
-#include <string>
+#include "cmd/cmd.h"
 #include <string_view>
-#include <vector>
 
-std::vector<std::string> sh_tokenize(std::string_view line, char delimeter);
+args_container sh_tokenize(std::string_view line, char delimeter);

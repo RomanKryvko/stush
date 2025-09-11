@@ -1,7 +1,7 @@
 #include <parser.h>
 
-std::vector<std::string> sh_tokenize(std::string_view line, char delimeter) {
-    std::vector<std::string> res {};
+args_container sh_tokenize(std::string_view line, char delimeter) {
+    args_container res {};
     if (line.empty()) {
         return res;
     }

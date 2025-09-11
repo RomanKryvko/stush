@@ -19,14 +19,14 @@ void err_too_many_args(std::string_view command) {
     std::cerr << command << ": too many arguments" << '\n';
 }
 
-int com_help(const std::vector<std::string>& args) {
+int com_help(const args_container& args) {
     for (const auto& [k,v] : commands) {
         std::cout << k << ": " << v.doc << '\n';
     }
     return EXIT_SUCCESS;
 }
 
-int com_clear(const std::vector<std::string>& args) {
+int com_clear(const args_container& args) {
     Terminal term {};
     term.set_cursor_position({1, 1});
     term.clear_to_screen_end();
@@ -34,7 +34,7 @@ int com_clear(const std::vector<std::string>& args) {
     return EXIT_SUCCESS;
 }
 
-int com_exit(const std::vector<std::string>& args) {
+int com_exit(const args_container& args) {
     if (args.size() == 1)
         exit(EXIT_SUCCESS);
 
@@ -46,7 +46,7 @@ int com_exit(const std::vector<std::string>& args) {
     exit(std::stoi(args[1]));
 }
 
-int exec_builtin(const std::vector<std::string>& args) {
+int exec_builtin(const args_container& args) {
     cmd_function_t builtin {};
     try {
         builtin = commands.at(args[0]).function;

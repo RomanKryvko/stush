@@ -1,4 +1,5 @@
 #include "builtins/builtins.h"
+#include "cmd/cmd.h"
 #include "cmd/expansion.h"
 #include <parser.h>
 #include <cassert>
@@ -7,14 +8,13 @@
 #include <iostream>
 #include <sched.h>
 #include <string>
-#include <vector>
 #include <unistd.h>
 #include <wait.h>
 #include <termios.h>
 #include <linereader/linereader.h>
 
 //NOTE: we have to use std::string because exec expects a null-terminated string
-int run_simple_command(std::vector<std::string>& args) {
+int run_simple_command(args_container& args) {
     for (auto& arg : args) {
         expand_all_variables(arg);
         expand_tilde(arg);
@@ -55,7 +55,7 @@ int sh_main_loop(int argc, const char** argv) {
         std::string line {linereader.sh_read_line(prompt)};
         if (line.empty())
             continue;
-        std::vector<std::string> args {sh_tokenize(line, delimeter)};
+        args_container args {sh_tokenize(line, delimeter)};
         std::cout << "\n";
         int status {run_simple_command(args)};
         std::cout << "\nProcess " << args[0] << " exited with code " << status << '\n';
