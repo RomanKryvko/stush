@@ -1,4 +1,5 @@
 #include "builtins/builtins.h"
+#include "cmd/expansion.h"
 #include <parser.h>
 #include <cassert>
 #include <cstdio>
@@ -13,7 +14,12 @@
 #include <linereader/linereader.h>
 
 //NOTE: we have to use std::string because exec expects a null-terminated string
-int sh_execute(const std::vector<std::string>& args) {
+int run_simple_command(std::vector<std::string>& args) {
+    for (auto& arg : args) {
+        expand_all_variables(arg);
+        expand_tilde(arg);
+    }
+
     int builtin_status = exec_builtin(args);
     if (builtin_status != BUILTIN_NOT_FOUND)
         return builtin_status;
@@ -51,7 +57,7 @@ int sh_main_loop(int argc, const char** argv) {
             continue;
         std::vector<std::string> args {sh_tokenize(line, delimeter)};
         std::cout << "\n";
-        int status {sh_execute(args)};
+        int status {run_simple_command(args)};
         std::cout << "\nProcess " << args[0] << " exited with code " << status << '\n';
     }
 }

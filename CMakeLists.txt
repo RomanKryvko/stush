@@ -12,6 +12,7 @@ target_sources(stush PRIVATE
 
 add_subdirectory(src/builtins)
 add_subdirectory(src/linereader)
+add_subdirectory(src/cmd)
 
 include(FetchContent)
 FetchContent_Declare(
