@@ -1,8 +1,10 @@
 #include "cmd/expansion.h"
+#include "cmd/cmd.h"
 #include "cmd/variable.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
+#include <glob.h>
 #include <string>
 #include <string_view>
 #include <pwd.h>
@@ -89,3 +91,19 @@ void expand_tilde(std::string& str) {
     }
 }
 
+void expand_globs(args_container& args) {
+    for (auto it = args.begin(); it != args.end(); it++) {
+        if (it->find('*') == std::string::npos)
+            continue;
+
+        glob_t globbuf;
+        glob(it->c_str(), GLOB_NOCHECK | GLOB_NOSORT, nullptr, &globbuf);
+        if (globbuf.gl_pathc) {
+            *it = globbuf.gl_pathv[0];
+            for (int i = 1; i < globbuf.gl_pathc; i++) {
+                it = args.insert(it, globbuf.gl_pathv[i]);
+            }
+        }
+        globfree(&globbuf);
+    }
+}

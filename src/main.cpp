@@ -19,6 +19,7 @@ int run_simple_command(args_container& args) {
         expand_all_variables(arg);
         expand_tilde(arg);
     }
+    expand_globs(args);
 
     int builtin_status = exec_builtin(args);
     if (builtin_status != BUILTIN_NOT_FOUND)
@@ -33,7 +34,7 @@ int run_simple_command(args_container& args) {
     int status {};
     pid_t pid = fork();
     if (!pid) {
-        if(execvp(args[0].c_str(), const_cast<char**>(args_c)) == -1) {
+        if (execvp(args[0].c_str(), const_cast<char**>(args_c)) == -1) {
             perror("execvp");
         }
         exit(EXIT_FAILURE);
