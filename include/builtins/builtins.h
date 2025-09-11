@@ -20,4 +20,10 @@ int com_clear(const args_container& args);
 
 int com_exit(const args_container& args);
 
+int com_set(const args_container& args);
+
+int com_export(const args_container& args);
+
+int com_unset(const args_container& args);
+
 int exec_builtin(const args_container& args);
