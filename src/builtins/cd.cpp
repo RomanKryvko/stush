@@ -1,4 +1,5 @@
 #include "builtins/builtins.h"
+#include "cmd/cmd.h"
 #include "builtins/cd.h"
 #include <iostream>
 #include <unistd.h>
@@ -16,7 +17,7 @@ int try_cd(const fs::path& path) {
     }
 }
 
-int com_cd(const args_container& args) {
+int com_cd(args_view args) {
     if (args.size() == 1) {
         char* home = getenv("HOME");
         if (home && fs::is_directory(home)) {

@@ -1,5 +1,6 @@
 #include "builtins/builtins.h"
 #include "builtins/cd.h"
+#include "cmd/cmd.h"
 #include "cmd/variable.h"
 #include "linereader/terminal.h"
 #include <cstdio>
@@ -24,14 +25,14 @@ void err_too_many_args(std::string_view command) {
     std::cerr << command << ": too many arguments" << '\n';
 }
 
-int com_help(const args_container& args) {
+int com_help(args_view args) {
     for (const auto& [k,v] : commands) {
         std::cout << k << ": " << v.doc << '\n';
     }
     return EXIT_SUCCESS;
 }
 
-int com_clear(const args_container& args) {
+int com_clear(args_view args) {
     Terminal term {};
     term.set_cursor_position({1, 1});
     term.clear_to_screen_end();
@@ -39,7 +40,7 @@ int com_clear(const args_container& args) {
     return EXIT_SUCCESS;
 }
 
-int com_exit(const args_container& args) {
+int com_exit(args_view args) {
     if (args.size() == 1)
         exit(EXIT_SUCCESS);
 
@@ -51,7 +52,7 @@ int com_exit(const args_container& args) {
     exit(std::stoi(args[1]));
 }
 
-int com_set(const args_container& args) {
+int com_set(args_view args) {
     switch (args.size()) {
         case 1: {
             //TODO: print all shell vars?
@@ -70,7 +71,7 @@ int com_set(const args_container& args) {
     return EXIT_FAILURE;
 }
 
-int com_export(const args_container& args) {
+int com_export(args_view args) {
     switch (args.size()) {
         case 1: {
             //TODO: print all env vars?
@@ -95,7 +96,7 @@ int com_export(const args_container& args) {
     return EXIT_FAILURE;
 }
 
-int com_unset(const args_container& args) {
+int com_unset(args_view args) {
     if (args.size() == 1) {
         std::cerr << "Variable to unset not provided.\n";
         return EXIT_FAILURE;
@@ -118,7 +119,7 @@ int com_unset(const args_container& args) {
     return EXIT_SUCCESS;
 }
 
-int exec_builtin(const args_container& args) {
+int exec_builtin(args_view args) {
     cmd_function_t builtin {};
     try {
         builtin = commands.at(args[0]).function;

@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <wait.h>
 
-int run_simple_command_impl(const args_container& args) {
+int run_simple_command_impl(args_view args) {
     int builtin_status {exec_builtin(args)};
     if (builtin_status != BUILTIN_NOT_FOUND)
         return builtin_status;
@@ -32,17 +32,21 @@ int run_simple_command_impl(const args_container& args) {
     return WEXITSTATUS(status);
 }
 
-int run_simple_command(const args_container& args) {
-    for (const auto& word : args) {
-        if (word.find('*') != std::string::npos) {
-            auto copy {args};
-            for (auto& arg : copy) {
-                expand_all_variables(arg);
-                expand_tilde(arg);
-            }
-            expand_globs(copy);
-            return run_simple_command_impl(copy);
-        }
+int run_simple_command(args_view args) {
+    bool has_wildcard {false};
+
+    for (auto& arg : args) {
+        expand_all_variables(arg);
+        expand_tilde(arg);
+        if (arg.find('*') != std::string::npos)
+            has_wildcard = true;
+    }
+
+    if (has_wildcard) {
+        args_container copy;
+        copy.assign(args.begin(), args.end());
+        expand_globs(copy);
+        return run_simple_command_impl(copy);
     }
     return run_simple_command_impl(args);
 }
