@@ -1,58 +1,16 @@
-#include "builtins/builtins.h"
 #include "cmd/cmd.h"
-#include "cmd/expansion.h"
-#include <parser.h>
+#include "linereader/linereader.h"
+#include "parser.h"
 #include <cassert>
-#include <cstdio>
-#include <cstdlib>
 #include <iostream>
-#include <sched.h>
 #include <string>
-#include <unistd.h>
-#include <wait.h>
-#include <termios.h>
-#include <linereader/linereader.h>
-
-int run_simple_command(args_container& args) {
-    for (auto& arg : args) {
-        expand_all_variables(arg);
-        expand_tilde(arg);
-    }
-    expand_globs(args);
-
-    int builtin_status = exec_builtin(args);
-    if (builtin_status != BUILTIN_NOT_FOUND)
-        return builtin_status;
-
-    const char* args_c [args.size() + 1];
-    for (int i = 0; i < args.size(); i++) {
-        args_c[i] = args[i].c_str();
-    }
-    args_c[args.size()] = nullptr;
-
-    int status {};
-    pid_t pid = fork();
-    if (!pid) {
-        if (execvp(args[0].c_str(), const_cast<char**>(args_c)) == -1) {
-            perror("execvp");
-        }
-        exit(EXIT_FAILURE);
-    } else if (pid == -1) {
-        perror("fork");
-    } else {
-        do {
-            waitpid(pid, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    }
-    return WEXITSTATUS(status);
-}
 
 int sh_main_loop(int argc, const char** argv) {
     char delimeter {' '};
     std::string prompt {">>> "};
     LineReader linereader {};
     while (true) {
-        std::string line {linereader.sh_read_line(prompt)};
+        const std::string line {linereader.sh_read_line(prompt)};
         if (line.empty())
             continue;
         args_container args {sh_tokenize(line, delimeter)};
