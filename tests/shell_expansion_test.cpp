@@ -1,5 +1,7 @@
+#include "cmd/cmd.h"
 #include "cmd/expansion.h"
 #include "cmd/variable.h"
+#include "parser.h"
 #include <cstdlib>
 #include <gtest/gtest.h>
 #include <string>
@@ -82,4 +84,40 @@ TEST(TildeExpansion, doesntExpandEscaped) {
     const std::string exp {"\\~nobody/"};
     expand_tilde(tildestr);
     EXPECT_EQ(tildestr, exp);
+}
+
+TEST(ExpansionIntegrationTest, preservesTextInQuotes) {
+    var::set_var("DIR", "location");
+    const std::string input {"ls $DIR   ' enclosed args   ' some/~/location     \"enclosed '2'\" "};
+    const args_container exp {"ls", "location", " enclosed args   ",
+        "some/~/location", "enclosed '2'"};
+
+    auto act {sh_tokenize(input, ' ')};
+    for (auto& word : act) {
+        expand_all_variables(word);
+        expand_tilde(word);
+    }
+    EXPECT_EQ(act, exp);
+}
+
+TEST(ExpansionIntegrationTest, emptyInputGivesNoArgs) {
+    const std::string input {""};
+    const args_container exp {};
+    auto act {sh_tokenize(input, ' ')};
+    for (auto& word : act) {
+        expand_all_variables(word);
+        expand_tilde(word);
+    }
+    EXPECT_EQ(act, exp);
+}
+
+TEST(ExpansionIntegrationTest, emptyQuotesGiveEmptyArgs) {
+    const std::string input {"ls ''   '' \"    \" 'word' "};
+    const args_container exp {"ls", "", "", "    ", "word"};
+    auto act {sh_tokenize(input, ' ')};
+    for (auto& word : act) {
+        expand_all_variables(word);
+        expand_tilde(word);
+    }
+    EXPECT_EQ(act, exp);
 }

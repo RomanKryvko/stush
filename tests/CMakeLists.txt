@@ -61,6 +61,7 @@ target_sources(shell_expansion_test  PRIVATE
     shell_expansion_test.cpp
     ${PROJECT_SOURCE_DIR}/src/cmd/expansion.cpp
     ${PROJECT_SOURCE_DIR}/src/cmd/variable.cpp
+    ${PROJECT_SOURCE_DIR}/src/parser.cpp
 )
 
 target_link_libraries(

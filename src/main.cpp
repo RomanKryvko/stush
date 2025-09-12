@@ -13,7 +13,6 @@
 #include <termios.h>
 #include <linereader/linereader.h>
 
-//NOTE: we have to use std::string because exec expects a null-terminated string
 int run_simple_command(args_container& args) {
     for (auto& arg : args) {
         expand_all_variables(arg);

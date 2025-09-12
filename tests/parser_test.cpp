@@ -32,3 +32,45 @@ TEST(ParserTest, ConsecutiveDelimitersAreIgnored) {
     auto res = sh_tokenize("a   b    c", ' ');
     EXPECT_EQ(exp, res);
 }
+
+TEST(ParserTest, QuotesGroupWords) {
+    args_container exp {"a", "b   c   d", "e"};
+    auto res = sh_tokenize("a  \"b   c   d\"    e   ", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, DifferentQuoteMarksAreIgnored) {
+    args_container exp {"a", "b   'c '  d", "e"};
+    auto res = sh_tokenize("a  \"b   'c '  d\"    e   ", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, EmptyQuotesBecomeEmptyArg) {
+    args_container exp {"a", "", "b"};
+    auto res = sh_tokenize("a \"\" b", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, QuotesPreserveSpaces) {
+    args_container exp {"a", "   ", "b"};
+    auto res = sh_tokenize("a \"   \" b", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, NestedSingleQuotesInsideDoubleQuotes) {
+    args_container exp {"cmd", "arg 'with single quotes'", "end"};
+    auto res = sh_tokenize("cmd \"arg 'with single quotes'\" end", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, NestedDoubleQuotesInsideSingleQuotes) {
+    args_container exp {"cmd", "arg \"with double quotes\"", "end"};
+    auto res = sh_tokenize("cmd 'arg \"with double quotes\"' end", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, QuotesAroundSingleWord) {
+    args_container exp {"word"};
+    auto res = sh_tokenize("\"word\"", ' ');
+    EXPECT_EQ(exp, res);
+}
