@@ -14,3 +14,7 @@ void expand_all_variables(std::string& str);
 void expand_tilde(std::string& str);
 
 void expand_globs(args_container& args);
+
+void strip_all_quotes(args_view args);
+
+void strip_quotes(std::string& str);

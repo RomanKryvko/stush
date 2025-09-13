@@ -89,8 +89,8 @@ TEST(TildeExpansion, doesntExpandEscaped) {
 TEST(ExpansionIntegrationTest, preservesTextInQuotes) {
     var::set_var("DIR", "location");
     const std::string input {"ls $DIR   ' enclosed args   ' some/~/location     \"enclosed '2'\" "};
-    const args_container exp {"ls", "location", " enclosed args   ",
-        "some/~/location", "enclosed '2'"};
+    const args_container exp {"ls", "location", "' enclosed args   '",
+        "some/~/location", "\"enclosed '2'\""};
 
     auto act {sh_tokenize(input, ' ')};
     for (auto& word : act) {
@@ -113,7 +113,7 @@ TEST(ExpansionIntegrationTest, emptyInputGivesNoArgs) {
 
 TEST(ExpansionIntegrationTest, emptyQuotesGiveEmptyArgs) {
     const std::string input {"ls ''   '' \"    \" 'word' "};
-    const args_container exp {"ls", "", "", "    ", "word"};
+    const args_container exp {"ls", "''", "''", "\"    \"", "'word'"};
     auto act {sh_tokenize(input, ' ')};
     for (auto& word : act) {
         expand_all_variables(word);

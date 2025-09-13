@@ -29,6 +29,9 @@ void expand_variable(std::string& str, size_t start, size_t end) {
 }
 
 void expand_all_variables(std::string& str) {
+    if (str.front() == '\'' && str.back() == '\'') // covers both str.size < 2 and quoted cases
+        return;
+
     size_t var_idx {str.find(VAR_PREFIX)};
 
     while (var_idx != std::string::npos) {
@@ -97,7 +100,7 @@ void expand_globs(args_container& args) {
             continue;
 
         glob_t globbuf;
-        glob(it->c_str(), GLOB_NOCHECK | GLOB_NOSORT, nullptr, &globbuf);
+        glob(it->c_str(), GLOB_TILDE | GLOB_NOCHECK | GLOB_NOSORT, nullptr, &globbuf);
         if (globbuf.gl_pathc) {
             *it = globbuf.gl_pathv[0];
             for (int i = 1; i < globbuf.gl_pathc; i++) {
@@ -105,5 +108,22 @@ void expand_globs(args_container& args) {
             }
         }
         globfree(&globbuf);
+    }
+}
+
+constexpr bool is_quoted(std::string_view str) {
+    return str.size() > 1 && str.front() == str.back() && (str.front() == '\'' || str.front() == '\"');
+}
+
+void strip_quotes(std::string& str) {
+    if (is_quoted(str)) {
+        str.erase(0, 1);
+        str.erase(str.size() - 1, 1);
+    }
+}
+
+void strip_all_quotes(args_view args) {
+    for (auto& str : args) {
+        strip_quotes(str);
     }
 }

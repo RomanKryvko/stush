@@ -4,10 +4,6 @@
 #include <stdexcept>
 #include <string_view>
 
-constexpr inline bool is_quote(char c) {
-    return c == '\'' || c == '\"';
-}
-
 args_container sh_tokenize(std::string_view line, char delimeter) {
     args_container res {};
     if (line.empty()) {
@@ -40,27 +36,19 @@ args_container sh_tokenize(std::string_view line, char delimeter) {
                 throw std::runtime_error("Quote marks mismatch");
             }
 
-            if (is_quote(line[pos_start]) && is_quote(line[pos_end - 1])) {
-                res.push_back(std::string(line.substr(pos_start + 1, pos_end - pos_start - 2)));
-            } else {
-                res.push_back(std::string(line.substr(pos_start)));
-            }
+            res.push_back(std::string(line.substr(pos_start)));
             break;
         }
 
         if (in_squotes || in_dquotes) {
-            pos_start++; // Skip the opening quote
             const char quote {in_squotes ? '\'' : '\"'};
             pos_end = line.find(quote, pos_end);
             if (pos_end == std::string_view::npos)
                 throw std::runtime_error("Quote marks mismatch");
+            pos_end++;
         }
 
-        if (is_quote(line[pos_start]) && is_quote(line[pos_end - 1])) {
-            res.push_back(std::string(line.substr(pos_start + 1, pos_end - pos_start - 2)));
-        } else {
-            res.push_back(std::string(line.substr(pos_start, pos_end - pos_start)));
-        }
+        res.push_back(std::string(line.substr(pos_start, pos_end - pos_start)));
 
         pos_start = pos_end + 1;
     } while (pos_start < line.size());

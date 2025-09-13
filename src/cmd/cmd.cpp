@@ -46,8 +46,10 @@ int run_simple_command(args_view args) {
         args_container copy;
         copy.assign(args.begin(), args.end());
         expand_globs(copy);
+        strip_all_quotes(copy);
         return run_simple_command_impl(copy);
     }
+    strip_all_quotes(args);
     return run_simple_command_impl(args);
 }
 
