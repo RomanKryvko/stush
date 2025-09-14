@@ -113,6 +113,9 @@ int run_pipeline(args_view args) {
         const pid_t pid {fork()};
         if (!pid) {
             dup2(pipes[0][1], STDOUT_FILENO);
+            if (pipelines[0].separator == sep::PIPE_BOTH) {
+                dup2(pipes[0][1], STDERR_FILENO);
+            }
 
             close_pipes(pipes);
 
@@ -129,6 +132,9 @@ int run_pipeline(args_view args) {
         if (!pid) {
             dup2(pipes[i - 1][0], STDIN_FILENO);
             dup2(pipes[i][1], STDOUT_FILENO);
+            if (pipelines[i].separator == sep::PIPE_BOTH) {
+                dup2(pipes[i][1], STDERR_FILENO);
+            }
 
             close_pipes(pipes);
 
@@ -139,11 +145,14 @@ int run_pipeline(args_view args) {
         }
         children[i] = pid;
     }
-    {
+    if (n > 1) {
         const auto last {n - 1};
         const pid_t pid {fork()};
         if (!pid) {
             dup2(pipes[last - 1][0], STDIN_FILENO);
+            if (pipelines[last].separator == sep::PIPE_BOTH) {
+                dup2(pipes[last][1], STDERR_FILENO);
+            }
 
             close_pipes(pipes);
 
