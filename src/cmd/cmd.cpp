@@ -41,7 +41,7 @@ int run_simple_command(args_view args) {
     for (auto& arg : args) {
         expand_all_variables(arg);
         expand_tilde(arg);
-        if (arg.find('*') != std::string::npos)
+        if (arg.find_first_of("*?") != std::string::npos)
             has_wildcard = true;
     }
 
@@ -65,10 +65,11 @@ struct list_item {
     std::string_view separator; // TODO: use enum here?
 };
 
+/* Gets the next pipeline from list and advances the argument iterator. */
 list_item get_next_pipeline(args_view::iterator& it, const args_view::iterator end) {
     const auto start {it};
     while (it != end) {
-        const std::string& s {*it};
+        const std::string_view& s {*it};
         if (s == sep::LIST_AND || s == sep::LIST_OR) {
             const args_view command {start, it};
             if (command.empty()) {
@@ -108,19 +109,19 @@ std::vector<args_view> split_compound_command(args_container& args) {
 
     auto prev {args.begin()};
     for (auto it = args.begin(); it != args.end(); it++) {
-        const std::string& s {*it};
+        const std::string_view& s {*it};
         if (s == sep::NEWLINE || s == sep::COMMAND) {
             const args_view command {prev, it};
             if (!command.empty()) {
                 res.push_back(command);
             }
-            prev = ++it;
+            prev = it + 1;
         }
     }
 
-    if (res.empty()) { //NOTE: probably redundant, as all commands contain at least one newline
-        res.push_back(args);
-    }
+    if (prev != args.end() - 1)
+        res.push_back({prev, args.end()});
+
     return res;
 }
 
