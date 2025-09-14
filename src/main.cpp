@@ -15,7 +15,7 @@ int sh_main_loop(int argc, const char** argv) {
             continue;
         args_container args {sh_tokenize(line, delimeter)};
         std::cout << "\n";
-        int status {run_simple_command(args)};
+        int status {run_compound_command(args)};
         std::cout << "\nProcess " << args[0] << " exited with code " << status << '\n';
     }
 }
