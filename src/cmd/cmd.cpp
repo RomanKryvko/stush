@@ -58,7 +58,7 @@ args_container prepare_command_args(args_view args) {
 
 struct pipeline_item {
     args_container args;
-    std::string_view separator; //TODO: use enum here?
+    bool pipe_both;
 };
 
 /* Splits the pipeline by | and |& operators and performs expansions on each
@@ -73,13 +73,13 @@ std::vector<pipeline_item> split_pipeline(args_view args) {
             if (prev == it) {
                 throw std::runtime_error("Missing command in pipeline.");
             }
-            res.push_back({prepare_command_args({prev, it}), s});
+            res.push_back({prepare_command_args({prev, it}), s == sep::PIPE_BOTH});
             prev = it + 1;
         }
     }
 
     if (prev != args.end())
-        res.push_back({prepare_command_args({prev, args.end()}), ""});
+        res.push_back({prepare_command_args({prev, args.end()}), false});
 
     return res;
 }
@@ -95,11 +95,12 @@ int run_pipeline(args_view args) {
     auto pipelines {split_pipeline(args)};
     assert(!pipelines.empty());
 
-    const size_t n {pipelines.size()};
-    if (n == 1)
+    const size_t ncommands {pipelines.size()};
+    if (ncommands == 1)
         return run_simple_command(pipelines[0].args);
 
-    std::vector<int[2]> pipes(n - 1);
+    const size_t npipes {ncommands - 1};
+    std::vector<int[2]> pipes(npipes);
     for (auto p : pipes) {
         if (pipe(p) == -1) {
             perror("pipe");
@@ -107,61 +108,29 @@ int run_pipeline(args_view args) {
         }
     }
 
-    std::vector<pid_t> children (n);
-    //NOTE: this is ugly, but it allows us to avoid ifs
-    {
+    std::vector<pid_t> children (ncommands);
+    for (size_t i = 0; i < ncommands; i++) {
         const pid_t pid {fork()};
         if (!pid) {
-            dup2(pipes[0][1], STDOUT_FILENO);
-            if (pipelines[0].separator == sep::PIPE_BOTH) {
-                dup2(pipes[0][1], STDERR_FILENO);
+            if (i > 0) {
+                dup2(pipes[i - 1][0], STDIN_FILENO);
+            }
+            if (i < npipes) {
+                dup2(pipes[i][1], STDOUT_FILENO);
+                if (pipelines[i].pipe_both) {
+                    dup2(pipes[i][1], STDERR_FILENO);
+                }
             }
 
             close_pipes(pipes);
 
             //TODO: implement running bultins here
-            run_process(pipelines[0].args);
-        } else if (pid < 0) {
-            perror("fork");
-            return EXIT_FAILURE;
-        }
-        children[0] = pid;
-    }
-    for (size_t i = 1; i < n - 1; i++) {
-        const pid_t pid {fork()};
-        if (!pid) {
-            dup2(pipes[i - 1][0], STDIN_FILENO);
-            dup2(pipes[i][1], STDOUT_FILENO);
-            if (pipelines[i].separator == sep::PIPE_BOTH) {
-                dup2(pipes[i][1], STDERR_FILENO);
-            }
-
-            close_pipes(pipes);
-
             run_process(pipelines[i].args);
         } else if (pid < 0) {
             perror("fork");
             return EXIT_FAILURE;
         }
         children[i] = pid;
-    }
-    if (n > 1) {
-        const auto last {n - 1};
-        const pid_t pid {fork()};
-        if (!pid) {
-            dup2(pipes[last - 1][0], STDIN_FILENO);
-            if (pipelines[last].separator == sep::PIPE_BOTH) {
-                dup2(pipes[last][1], STDERR_FILENO);
-            }
-
-            close_pipes(pipes);
-
-            run_process(pipelines[last].args);
-        } else if (pid < 0) {
-            perror("fork");
-            return EXIT_FAILURE;
-        }
-        children[last] = pid;
     }
 
     close_pipes(pipes);
