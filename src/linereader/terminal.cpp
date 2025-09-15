@@ -1,6 +1,7 @@
 #include "linereader/terminal.h"
 #include <cstdlib>
 #include <cstdio>
+#include <termios.h>
 #include <unistd.h>
 
 // We need this to be global state to ensure that we can disable raw mode on exit
@@ -17,7 +18,7 @@ void _disable_raw_mode() {
     if (!is_in_raw_mode)
         return;
 
-    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
         perror("tcsetattr");
         exit(EXIT_FAILURE);
     }
@@ -33,15 +34,15 @@ void Terminal::enable_raw_mode() {
         return;
 
     atexit(_disable_raw_mode);
-    if(tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
         perror("tcgetattr");
         exit(EXIT_FAILURE);
     }
     termios raw { orig_termios };
     raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
     raw.c_oflag &= ~(OPOST);
-    raw.c_lflag &= ~(ECHO | ICANON);
-    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
+    raw.c_lflag &= ~(ECHO | ICANON | ISIG);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
         perror("tcsetattr");
         exit(EXIT_FAILURE);
     }

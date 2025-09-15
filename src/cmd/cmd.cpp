@@ -2,6 +2,7 @@
 #include "cmd/cmd.h"
 #include "cmd/expansion.h"
 #include <cassert>
+#include <csignal>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -11,7 +12,12 @@
 #include <unistd.h>
 #include <wait.h>
 
+inline int signal_status(int status) {
+    return 128 + WTERMSIG(status);
+}
+
 void run_process(args_view args) {
+    signal(SIGINT, SIG_DFL);
     const char* argv[args.size() + 1];
     for (size_t i = 0; i < args.size(); i++) {
         argv[i] = args[i].c_str();
@@ -36,12 +42,16 @@ int run_simple_command(args_view args) {
         run_process(args);
     } else if (pid == -1) {
         perror("fork");
-    } else {
-        do {
-            waitpid(pid, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
     }
-    return WEXITSTATUS(status);
+    while (true) {
+        waitpid(pid, &status, WUNTRACED);
+        if (WIFEXITED(status)) {
+            return WEXITSTATUS(status);
+        }
+        if (WIFSIGNALED(status)) {
+            return signal_status(status);
+        }
+    }
 }
 
 /* Perform variable, tilde, glob expansion and strip quotes. */
@@ -141,13 +151,20 @@ int run_pipeline(args_view args) {
     int pl_status {};
     for (pid_t pid : children) {
         int status {};
-        do {
+        while (true) {
             waitpid(pid, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-        pl_status = status;
+            if (WIFEXITED(status)) {
+                pl_status = WEXITSTATUS(status);
+                break;
+            }
+            if (WIFSIGNALED(status)) {
+                pl_status = signal_status(status);
+                break;
+            }
+        }
     }
 
-    return WEXITSTATUS(pl_status);
+    return pl_status;
 }
 
 struct list_item {

@@ -2,6 +2,7 @@
 #include "linereader/linereader.h"
 #include "parser.h"
 #include <cassert>
+#include <csignal>
 #include <iostream>
 #include <string>
 
@@ -21,5 +22,6 @@ int sh_main_loop(int argc, const char** argv) {
 }
 
 int main(int argc, char** argv) {
+    signal(SIGINT, SIG_IGN);
     sh_main_loop(argc, (const char**) argv);
 }
