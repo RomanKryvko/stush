@@ -124,7 +124,10 @@ int run_pipeline(args_view args) {
 
             close_pipes(pipes);
 
-            //TODO: implement running bultins here
+            int builtin_status {exec_builtin(pipelines[i].args)};
+            if (builtin_status != BUILTIN_NOT_FOUND)
+                exit(builtin_status);
+
             run_process(pipelines[i].args);
         } else if (pid < 0) {
             perror("fork");
