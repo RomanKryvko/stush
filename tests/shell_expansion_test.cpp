@@ -54,7 +54,7 @@ TEST(TildeExpansion, expandsDefaultHome) {
     std::string tildestr {"~"};
     const std::string exp {home};
 
-    expand_tilde(tildestr);
+    expand_word(tildestr);
 
     EXPECT_EQ(tildestr, exp);
 }
@@ -63,26 +63,26 @@ TEST(TildeExpansion, expandsUserHome) {
     std::string tildestr {"~nobody/"};
     const std::string exp {"/"};
 
-    expand_tilde(tildestr);
+    expand_word(tildestr);
 
     EXPECT_EQ(tildestr, exp);
 
     tildestr = "~nobody";
-    expand_tilde(tildestr);
+    expand_word(tildestr);
     EXPECT_EQ(tildestr, "/");
 
     tildestr = "~root/";
     const std::string exp2 {"/root/"};
 
-    expand_tilde(tildestr);
+    expand_word(tildestr);
 
     EXPECT_EQ(tildestr, exp2);
 }
 
 TEST(TildeExpansion, doesntExpandEscaped) {
     std::string tildestr {"\\~nobody/"};
-    const std::string exp {"\\~nobody/"};
-    expand_tilde(tildestr);
+    const std::string exp {"~nobody/"};
+    expand_word(tildestr);
     EXPECT_EQ(tildestr, exp);
 }
 
@@ -95,7 +95,6 @@ TEST(ExpansionIntegrationTest, preservesTextInQuotes) {
     auto act {sh_tokenize(input, ' ')};
     for (auto& word : act) {
         expand_word(word);
-        expand_tilde(word);
     }
     EXPECT_EQ(act, exp);
 }
@@ -106,7 +105,6 @@ TEST(ExpansionIntegrationTest, emptyInputGivesNoArgs) {
     auto act {sh_tokenize(input, ' ')};
     for (auto& word : act) {
         expand_word(word);
-        expand_tilde(word);
     }
     EXPECT_EQ(act, exp);
 }
@@ -117,7 +115,6 @@ TEST(ExpansionIntegrationTest, emptyQuotesGiveEmptyArgs) {
     auto act {sh_tokenize(input, ' ')};
     for (auto& word : act) {
         expand_word(word);
-        expand_tilde(word);
     }
     EXPECT_EQ(act, exp);
 }

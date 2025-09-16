@@ -9,7 +9,7 @@
 #include <string_view>
 #include <pwd.h>
 
-static std::string word_separators {R"( \/$:;-+[]{}()'"?*)"};
+static constexpr std::string_view word_separators {R"( \/$:;-+[]{}()'"?*)"};
 
 [[nodiscard]]
 std::string get_variable(const std::string& str) noexcept {
@@ -22,10 +22,45 @@ std::string get_variable(const std::string& str) noexcept {
     return env;
 }
 
-void expand_variable(std::string& str, size_t start_pos, size_t end_pos) {
+static void expand_variable(std::string& str, size_t start_pos, size_t end_pos) {
     const std::string varname {str.substr(start_pos + 1, end_pos - start_pos - 1)};
     const auto expanded {get_variable(std::move(varname))};
     str.replace(start_pos, end_pos - start_pos, expanded);
+}
+
+[[nodiscard]]
+static std::string get_home(std::string_view name) {
+    for (passwd* entry = getpwent(); entry != nullptr; entry = getpwent()) {
+        if (entry->pw_name == name) {
+            endpwent();
+            return entry->pw_dir;
+        }
+    }
+    endpwent();
+    return "";
+}
+
+static void expand_tilde(std::string& str) {
+    if (str.empty() || str.at(0) != '~')
+        return;
+
+    const size_t slash_idx {str.find('/')};
+    const size_t prefix_end {slash_idx == std::string::npos ? str.size() : slash_idx};
+
+    if (prefix_end == 1) {
+        const char* home {getenv("HOME")};
+        if (home) {
+            str.replace(0, 1, home);
+        }
+        return;
+    }
+
+    const std::string homedir {get_home(str.substr(1, prefix_end - 1))};
+    if (homedir.size() == 1) {
+        str.replace(0, prefix_end + 1, homedir);
+    } else if (homedir.size() > 1) {
+        str.replace(0, prefix_end, homedir);
+    }
 }
 
 void expand_word(std::string& str) {
@@ -55,41 +90,6 @@ void expand_word(std::string& str) {
     }
 }
 
-[[nodiscard]]
-std::string get_home(std::string_view name) {
-    for (passwd* entry = getpwent(); entry != nullptr; entry = getpwent()) {
-        if (entry->pw_name == name) {
-            endpwent();
-            return entry->pw_dir;
-        }
-    }
-    endpwent();
-    return "";
-}
-
-void expand_tilde(std::string& str) {
-    if (str.empty() || str.at(0) != '~')
-        return;
-
-    const size_t slash_idx {str.find('/')};
-    const size_t prefix_end {slash_idx == std::string::npos ? str.size() : slash_idx};
-
-    if (prefix_end == 1) {
-        const char* home {getenv("HOME")};
-        if (home) {
-            str.replace(0, 1, home);
-        }
-        return;
-    }
-
-    const std::string homedir {get_home(str.substr(1, prefix_end - 1))};
-    if (homedir.size() == 1) {
-        str.replace(0, prefix_end + 1, homedir);
-    } else if (homedir.size() > 1) {
-        str.replace(0, prefix_end, homedir);
-    }
-}
-
 void expand_globs(args_container& args) {
     for (auto it = args.begin(); it != args.end(); it++) {
         if (it->find('*') == std::string::npos)
@@ -107,11 +107,11 @@ void expand_globs(args_container& args) {
     }
 }
 
-constexpr bool is_quoted(std::string_view str) {
+static constexpr bool is_quoted(std::string_view str) {
     return str.size() > 1 && str.front() == str.back() && (str.front() == '\'' || str.front() == '\"');
 }
 
-void strip_quotes(std::string& str) {
+static void strip_quotes(std::string& str) {
     if (is_quoted(str)) {
         str.erase(0, 1);
         str.erase(str.size() - 1, 1);
