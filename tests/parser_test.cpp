@@ -113,3 +113,17 @@ TEST(ParserTest, HandlesCommandSeparatorsAtTheEnd) {
     res = sh_tokenize("  echo&&  exit||", ' ');
     EXPECT_EQ(exp, res);
 }
+
+TEST(ParserTest, ignoresComments) {
+    args_container exp {};
+    auto res = sh_tokenize("  #echo&&  exit;", ' ');
+    EXPECT_EQ(exp, res);
+
+    exp = {"echo", "&&", "exit", ";"};
+    res = sh_tokenize("  echo&&  exit;#;;     &&       ", ' ');
+    EXPECT_EQ(exp, res);
+
+    exp = {};
+    res = sh_tokenize("#    echo", ' ');
+    EXPECT_EQ(exp, res);
+}

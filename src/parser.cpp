@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <string_view>
 
+const char COMMENT = '#';
+
 inline bool is_com_sep(char c) {
     return c == ';';
 }
@@ -16,6 +18,16 @@ constexpr bool is_escaped(std::string_view str, size_t pos) {
     return pos > 0 && str[pos - 1] == '\\';
 }
 
+inline bool is_delimiter(std::string_view str, size_t pos, char delimeter) {
+    return pos < str.size() && str[pos] == delimeter && !is_escaped(str, pos);
+}
+
+inline bool is_word_char(std::string_view str, size_t pos, char delimeter) {
+    const bool escaped {is_escaped(str, pos)};
+    return pos < str.size() && (str[pos] != delimeter || escaped)
+    && (str[pos] != COMMENT || escaped);
+}
+
 args_container sh_tokenize(std::string_view line, char delimeter) {
     args_container res {};
     if (line.empty()) {
@@ -25,17 +37,20 @@ args_container sh_tokenize(std::string_view line, char delimeter) {
     size_t pos_start {};
     size_t pos_end {};
     do {
+        if (line[pos_start] == COMMENT && !is_escaped(line, pos_start))
+            break;
+
         bool in_squotes {false};
         bool in_dquotes {false};
 
-        while (pos_start < line.size() && line[pos_start] == delimeter && !is_escaped(line, pos_start)) {
+        while (is_delimiter(line, pos_start, delimeter)) {
             pos_start++;
         }
         if (pos_start == line.size())
             break;
 
         pos_end = pos_start;
-        while (pos_end < line.size() && (line[pos_end] != delimeter || is_escaped(line, pos_end))) {
+        while (is_word_char(line, pos_end, delimeter)) {
             if (line[pos_end] == '\'' && !in_dquotes && !is_escaped(line, pos_end)) {
                 in_squotes = !in_squotes;
             } else if (line[pos_end] == '\"' && !in_squotes && !is_escaped(line, pos_end)) {
