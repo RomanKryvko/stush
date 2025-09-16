@@ -74,3 +74,42 @@ TEST(ParserTest, QuotesAroundSingleWord) {
     auto res = sh_tokenize("\"word\"", ' ');
     EXPECT_EQ(exp, res);
 }
+
+TEST(ParserTest, EscapedQuotesAroundSingleWord) {
+    args_container exp {R"(\"word\")"};
+    auto res = sh_tokenize(R"(\"word\")", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, EscapedSpaces) {
+    args_container exp {R"(a\ sentence\ with\ escaped\ words)"};
+    auto res = sh_tokenize(R"(a\ sentence\ with\ escaped\ words)", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, SplitsOutCommandSeparators) {
+    args_container exp {"echo", ";", "exit"};
+    auto res = sh_tokenize("echo;exit", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, SplitsOutDoubleCommandSeparators) {
+    args_container exp {"echo", ";", "exit", "&&", "echo", "|", "wc", "-l",
+        "||", "exit"};
+    auto res = sh_tokenize("echo;exit&&echo| wc -l || exit", ' ');
+    EXPECT_EQ(exp, res);
+}
+
+TEST(ParserTest, HandlesCommandSeparatorsAtTheEnd) {
+    args_container exp {"echo", "&&", "exit", ";"};
+    auto res = sh_tokenize("  echo&&  exit;", ' ');
+    EXPECT_EQ(exp, res);
+
+    exp = {"echo", "&&", "exit", ";", ";", ";", "&&"};
+    res = sh_tokenize("  echo&&  exit;;;     &&       ", ' ');
+    EXPECT_EQ(exp, res);
+
+    exp = {"echo", "&&", "exit", "||"};
+    res = sh_tokenize("  echo&&  exit||", ' ');
+    EXPECT_EQ(exp, res);
+}
