@@ -9,7 +9,8 @@ const char ESCAPE_CHAR = '\\';
 [[nodiscard]]
 std::string get_variable(const std::string& str) noexcept;
 
-void expand_all_variables(std::string& str);
+/* Expand shell and env variables, tilde, strip escaping slashes. */
+void expand_word(std::string& str);
 
 void expand_tilde(std::string& str);
 

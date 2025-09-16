@@ -22,40 +22,36 @@ std::string get_variable(const std::string& str) noexcept {
     return env;
 }
 
-void expand_variable(std::string& str, size_t start, size_t end) {
-    const auto var_len {end - start};
-    const auto expanded {get_variable(str.substr(start, var_len))};
-    str.replace(start - 1, var_len + 1, expanded);
+void expand_variable(std::string& str, size_t start_pos, size_t end_pos) {
+    const std::string varname {str.substr(start_pos + 1, end_pos - start_pos - 1)};
+    const auto expanded {get_variable(std::move(varname))};
+    str.replace(start_pos, end_pos - start_pos, expanded);
 }
 
-void expand_all_variables(std::string& str) {
-    if (str.front() == '\'' && str.back() == '\'') // covers both str.size < 2 and quoted cases
+void expand_word(std::string& str) {
+    if (!str.empty() && str.front() == '\'' && str.back() == '\'')
         return;
 
-    size_t var_idx {str.find(VAR_PREFIX)};
+    expand_tilde(str);
 
-    while (var_idx != std::string::npos) {
-        if (var_idx > 0 && str.at(var_idx - 1) == ESCAPE_CHAR) {
-            str.erase(var_idx - 1, 1);
-            var_idx = str.find(VAR_PREFIX, var_idx + 1);
+    bool escaped {false};
+    size_t i {};
+    while (i < str.size()) {
+        const char c {str[i]};
+        if (c == ESCAPE_CHAR && !escaped) {
+            str.erase(i, 1);
+            escaped = true;
             continue;
         }
-
-        const size_t varname_start {var_idx + 1}; // Skip VAR_PREFIX
-        size_t varname_end {varname_start};
-        while (varname_end < str.size()) {
-            if (word_separators.find(str.at(varname_end)) != std::string::npos) {
-                expand_variable(str, varname_start, varname_end);
-                break;
+        if (c == VAR_PREFIX && !escaped) {
+            size_t varname_end {i + 1};
+            while (varname_end < str.size() && word_separators.find(str[varname_end]) == std::string::npos) {
+                varname_end++;
             }
-            varname_end++;
+            expand_variable(str, i, varname_end);
         }
-        if (varname_end == str.size()) {
-            expand_variable(str, varname_start, varname_end);
-            return;
-        }
-
-        var_idx = str.find(VAR_PREFIX, var_idx + 1);
+        escaped = false;
+        i++;
     }
 }
 

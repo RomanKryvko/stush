@@ -14,7 +14,7 @@ TEST(VarExpansion, expandsSingleShellVars) {
     std::string varstr {"$USERHOME"};
     const std::string exp {"/home/user1"};
 
-    expand_all_variables(varstr);
+    expand_word(varstr);
 
     EXPECT_EQ(varstr, exp);
 }
@@ -30,7 +30,7 @@ TEST(VarExpansion, expandsAllShellVarsInString) {
     std::string varstr {"$USERHOME/$DIR $NAME;$SMTH*"};
     const std::string exp {"/home/user1/foo bar;something*"};
 
-    expand_all_variables(varstr);
+    expand_word(varstr);
 
     EXPECT_EQ(varstr, exp);
 }
@@ -44,7 +44,7 @@ TEST(VarExpansion, doesntExpandEscapedVars) {
     std::string varstr {"\\$USERHOME/$DIR \\$NAME;$SMTH*"};
     const std::string exp {"$USERHOME/foo $NAME;something*"};
 
-    expand_all_variables(varstr);
+    expand_word(varstr);
 
     EXPECT_EQ(varstr, exp);
 }
@@ -94,7 +94,7 @@ TEST(ExpansionIntegrationTest, preservesTextInQuotes) {
 
     auto act {sh_tokenize(input, ' ')};
     for (auto& word : act) {
-        expand_all_variables(word);
+        expand_word(word);
         expand_tilde(word);
     }
     EXPECT_EQ(act, exp);
@@ -105,7 +105,7 @@ TEST(ExpansionIntegrationTest, emptyInputGivesNoArgs) {
     const args_container exp {};
     auto act {sh_tokenize(input, ' ')};
     for (auto& word : act) {
-        expand_all_variables(word);
+        expand_word(word);
         expand_tilde(word);
     }
     EXPECT_EQ(act, exp);
@@ -116,7 +116,7 @@ TEST(ExpansionIntegrationTest, emptyQuotesGiveEmptyArgs) {
     const args_container exp {"ls", "''", "''", "\"    \"", "'word'"};
     auto act {sh_tokenize(input, ' ')};
     for (auto& word : act) {
-        expand_all_variables(word);
+        expand_word(word);
         expand_tilde(word);
     }
     EXPECT_EQ(act, exp);

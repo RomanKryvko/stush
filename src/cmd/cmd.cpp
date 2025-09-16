@@ -58,8 +58,7 @@ int run_simple_command(args_view args) {
 args_container prepare_command_args(args_view args) {
     args_container result {args.begin(), args.end()};
     for (auto& arg : result) {
-        expand_all_variables(arg);
-        expand_tilde(arg);
+        expand_word(arg);
     }
     expand_globs(result);
     strip_all_quotes(result);
