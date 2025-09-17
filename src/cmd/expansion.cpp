@@ -1,6 +1,7 @@
 #include "cmd/expansion.h"
 #include "cmd/cmd.h"
 #include "cmd/variable.h"
+#include "stringsep.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
@@ -8,8 +9,6 @@
 #include <string>
 #include <string_view>
 #include <pwd.h>
-
-static constexpr std::string_view word_separators {R"( \/$:;-+[]{}()'"?*)"};
 
 [[nodiscard]]
 std::string get_variable(const std::string& str) noexcept {
@@ -63,6 +62,10 @@ static void expand_tilde(std::string& str) {
     }
 }
 
+inline bool is_word_separator(char c) {
+    return sep::WORD_SEPARATORS.find(c) != std::string::npos;
+}
+
 void expand_word(std::string& str) {
     if (!str.empty() && str.front() == '\'' && str.back() == '\'')
         return;
@@ -73,14 +76,16 @@ void expand_word(std::string& str) {
     size_t i {};
     while (i < str.size()) {
         const char c {str[i]};
-        if (c == ESCAPE_CHAR && !escaped) {
+        if (c == sep::ESCAPE_CHAR && !escaped) {
             str.erase(i, 1);
             escaped = true;
             continue;
         }
-        if (c == VAR_PREFIX && !escaped) {
+        if (c == sep::VAR_PREFIX && !escaped) {
             size_t varname_end {i + 1};
-            while (varname_end < str.size() && word_separators.find(str[varname_end]) == std::string::npos) {
+            while (varname_end < str.size() &&
+                !is_word_separator(str[varname_end]))
+            {
                 varname_end++;
             }
             expand_variable(str, i, varname_end);

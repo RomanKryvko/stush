@@ -1,12 +1,13 @@
 #pragma once
 
 #include "linereader/utfstring.h"
+#include "stringsep.h"
 #include "types.h"
 #include <cstddef>
 #include <string>
 
 class LineBuffer {
-    std::string _word_separators {" ;/&.,\\[]^#$"};
+    std::string _word_separators {sep::WORD_SEPARATORS};
     utf8string buffer {};
     utf8string yank_buffer {};
     int _line_start {1};

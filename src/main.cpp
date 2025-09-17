@@ -1,6 +1,7 @@
 #include "cmd/cmd.h"
 #include "linereader/linereader.h"
 #include "parser.h"
+#include "stringsep.h"
 #include <bits/getopt_core.h>
 #include <cassert>
 #include <csignal>
@@ -30,6 +31,7 @@ int sh_main_loop(int argc, const char** argv) {
     }
 }
 
+[[nodiscard]]
 int run_command(std::string_view command, char delimeter = ' ') {
     args_container args {sh_tokenize(command, delimeter)};
     return run_compound_command(args);
@@ -64,8 +66,8 @@ int main(int argc, char** argv) {
             std::string line {};
             int status {};
             while (std::getline(ifs, line)) {
-                if (!line.empty() && line.front() != '#')
-                    run_command(line);
+                if (!line.empty() && line.front() != sep::COMMENT_CHAR)
+                    status = run_command(line);
             }
             exit(status);
         } catch (const fs::filesystem_error& err) {

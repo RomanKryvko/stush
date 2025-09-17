@@ -3,9 +3,6 @@
 #include "cmd/cmd.h"
 #include <string>
 
-const char VAR_PREFIX = '$';
-const char ESCAPE_CHAR = '\\';
-
 [[nodiscard]]
 std::string get_variable(const std::string& str) noexcept;
 

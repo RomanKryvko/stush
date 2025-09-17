@@ -1,21 +1,25 @@
 #include "parser.h"
 #include "cmd/cmd.h"
+#include "stringsep.h"
 #include <cstddef>
 #include <stdexcept>
 #include <string_view>
 
-const char COMMENT = '#';
-
-inline bool is_com_sep(char c) {
-    return c == ';';
+inline bool is_escaped(std::string_view str, size_t pos) {
+    return pos > 0 && str[pos - 1] == sep::ESCAPE_CHAR;
 }
 
-inline bool is_list_sep(char c) {
-    return c == '&' || c == '|';
+inline bool is_coment(std::string_view str, size_t pos) {
+    return str[pos] == sep::COMMENT_CHAR && !is_escaped(str, pos);
 }
 
-constexpr bool is_escaped(std::string_view str, size_t pos) {
-    return pos > 0 && str[pos - 1] == '\\';
+inline bool is_com_sep(std::string_view str, size_t pos) {
+    return str[pos] == sep::COMMAND_CHAR && !is_escaped(str, pos);
+}
+
+inline bool is_list_sep(std::string_view str, size_t pos) {
+    const bool is_sep {str[pos] == sep::OR_CHAR || str[pos] == sep::AND_CHAR};
+    return is_sep && !is_escaped(str, pos);
 }
 
 inline bool is_delimiter(std::string_view str, size_t pos, char delimeter) {
@@ -25,7 +29,7 @@ inline bool is_delimiter(std::string_view str, size_t pos, char delimeter) {
 inline bool is_word_char(std::string_view str, size_t pos, char delimeter) {
     const bool escaped {is_escaped(str, pos)};
     return pos < str.size() && (str[pos] != delimeter || escaped)
-    && (str[pos] != COMMENT || escaped);
+    && (str[pos] != sep::COMMENT_CHAR || escaped);
 }
 
 args_container sh_tokenize(std::string_view line, char delimeter) {
@@ -37,7 +41,7 @@ args_container sh_tokenize(std::string_view line, char delimeter) {
     size_t pos_start {};
     size_t pos_end {};
     do {
-        if (line[pos_start] == COMMENT && !is_escaped(line, pos_start))
+        if (line[pos_start] == sep::COMMENT_CHAR && !is_escaped(line, pos_start))
             break;
 
         bool in_squotes {false};
@@ -55,12 +59,12 @@ args_container sh_tokenize(std::string_view line, char delimeter) {
                 in_squotes = !in_squotes;
             } else if (line[pos_end] == '\"' && !in_squotes && !is_escaped(line, pos_end)) {
                 in_dquotes = !in_dquotes;
-            } else if (is_com_sep(line[pos_end]) || is_list_sep(line[pos_end])) {
+            } else if (is_com_sep(line, pos_end) || is_list_sep(line, pos_end)) {
                 if (pos_start != pos_end)
                     res.push_back(std::string(line.substr(pos_start, pos_end - pos_start)));
                 pos_start = pos_end;
                 pos_end++;
-                if (pos_end < line.size() && is_list_sep(line[pos_end]) && line[pos_end - 1] == line[pos_end]) {
+                if (pos_end < line.size() && is_list_sep(line, pos_end) && line[pos_end - 1] == line[pos_end]) {
                     pos_end++;
                 }
                 res.push_back(std::string(line.substr(pos_start, pos_end - pos_start)));
