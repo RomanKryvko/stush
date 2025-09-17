@@ -1,6 +1,7 @@
 #include "builtins/builtins.h"
 #include "cmd/cmd.h"
 #include "cmd/expansion.h"
+#include "stringsep.h"
 #include <cassert>
 #include <csignal>
 #include <cstddef>
@@ -16,7 +17,20 @@ inline int signal_status(int status) {
     return 128 + WTERMSIG(status);
 }
 
-void run_process(args_view args) {
+static int wait_for_child(pid_t pid) {
+    int status {};
+    while (true) {
+        waitpid(pid, &status, WUNTRACED);
+        if (WIFEXITED(status)) {
+            return WEXITSTATUS(status);
+        }
+        if (WIFSIGNALED(status)) {
+            return signal_status(status);
+        }
+    }
+}
+
+static void run_process(args_view args) {
     signal(SIGINT, SIG_DFL);
     const char* argv[args.size() + 1];
     for (size_t i = 0; i < args.size(); i++) {
@@ -43,19 +57,11 @@ int run_simple_command(args_view args) {
     } else if (pid == -1) {
         perror("fork");
     }
-    while (true) {
-        waitpid(pid, &status, WUNTRACED);
-        if (WIFEXITED(status)) {
-            return WEXITSTATUS(status);
-        }
-        if (WIFSIGNALED(status)) {
-            return signal_status(status);
-        }
-    }
+    return wait_for_child(pid);
 }
 
 /* Perform variable, tilde, glob expansion and strip quotes. */
-args_container prepare_command_args(args_view args) {
+static args_container prepare_command_args(args_view args) {
     args_container result {args.begin(), args.end()};
     for (auto& arg : result) {
         expand_word(arg);
@@ -65,14 +71,19 @@ args_container prepare_command_args(args_view args) {
     return result;
 }
 
+enum class pipe_type {
+    PIPE_STDOUT,
+    PIPE_BOTH,
+};
+
 struct pipeline_item {
     args_container args;
-    bool pipe_both;
+    pipe_type type;
 };
 
 /* Splits the pipeline by | and |& operators and performs expansions on each
  * of the resulting commands */
-std::vector<pipeline_item> split_pipeline(args_view args) {
+static std::vector<pipeline_item> split_pipeline(args_view args) {
     std::vector<pipeline_item> res {};
 
     auto prev {args.begin()};
@@ -82,13 +93,14 @@ std::vector<pipeline_item> split_pipeline(args_view args) {
             if (prev == it) {
                 throw std::runtime_error("Missing command in pipeline.");
             }
-            res.push_back({prepare_command_args({prev, it}), s == sep::PIPE_BOTH});
+            const pipe_type type {s == sep::PIPE_BOTH ? pipe_type::PIPE_BOTH : pipe_type::PIPE_STDOUT};
+            res.push_back({prepare_command_args({prev, it}), type});
             prev = it + 1;
         }
     }
 
     if (prev != args.end())
-        res.push_back({prepare_command_args({prev, args.end()}), false});
+        res.push_back({prepare_command_args({prev, args.end()}), pipe_type::PIPE_STDOUT});
 
     return res;
 }
@@ -126,7 +138,7 @@ int run_pipeline(args_view args) {
             }
             if (i < npipes) {
                 dup2(pipes[i][1], STDOUT_FILENO);
-                if (pipelines[i].pipe_both) {
+                if (pipelines[i].type == pipe_type::PIPE_BOTH) {
                     dup2(pipes[i][1], STDERR_FILENO);
                 }
             }
@@ -149,32 +161,26 @@ int run_pipeline(args_view args) {
 
     int pl_status {};
     for (pid_t pid : children) {
-        int status {};
-        while (true) {
-            waitpid(pid, &status, WUNTRACED);
-            if (WIFEXITED(status)) {
-                pl_status = WEXITSTATUS(status);
-                break;
-            }
-            if (WIFSIGNALED(status)) {
-                pl_status = signal_status(status);
-                break;
-            }
-        }
+        pl_status = wait_for_child(pid);
     }
 
     return pl_status;
 }
 
+enum list_type {
+    AND,
+    OR,
+};
+
 struct list_item {
     args_view args;
-    std::string_view separator; // TODO: use enum here?
+    list_type type;
 };
 
 /* Gets the next pipeline from list and advances the argument iterator. */
-list_item get_next_pipeline(args_view::iterator& it, const args_view::iterator end) {
+static list_item get_next_pipeline(args_view args, args_view::iterator& it) {
     const auto start {it};
-    while (it != end) {
+    while (it != args.end()) {
         const std::string_view& s {*it};
         if (s == sep::LIST_AND || s == sep::LIST_OR) {
             const args_view command {start, it};
@@ -183,11 +189,12 @@ list_item get_next_pipeline(args_view::iterator& it, const args_view::iterator e
             }
 
             it++;
-            return {command, s};
+            const list_type type {s == sep::LIST_AND ? list_type::AND : list_type::OR};
+            return {command, type};
         }
         it++;
     }
-    return {{start, it}, ""};
+    return {{start, it}, list_type::AND};
 }
 
 int run_list(args_view args) {
@@ -196,13 +203,13 @@ int run_list(args_view args) {
     auto it {args.begin()};
 
     while (it != args.end()) {
-        const auto command = get_next_pipeline(it, args.end());
+        const auto command = get_next_pipeline(args, it);
         status = run_pipeline(command.args);
 
-        if (command.separator == sep::LIST_AND && status != EXIT_SUCCESS) {
+        if (command.type == list_type::AND && status != EXIT_SUCCESS) {
             return status;
         }
-        if (command.separator == sep::LIST_OR && status == EXIT_SUCCESS) {
+        if (command.type == list_type::OR && status == EXIT_SUCCESS) {
             return status;
         }
     }
@@ -210,7 +217,7 @@ int run_list(args_view args) {
     return status;
 }
 
-std::vector<args_view> split_compound_command(args_container& args) {
+static std::vector<args_view> split_compound_command(args_container& args) {
     std::vector<args_view> res {};
 
     auto prev {args.begin()};
