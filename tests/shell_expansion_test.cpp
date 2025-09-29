@@ -92,7 +92,7 @@ TEST(ExpansionIntegrationTest, preservesTextInQuotes) {
     const args_container exp {"ls", "location", "' enclosed args   '",
         "some/~/location", "\"enclosed '2'\""};
 
-    auto act {sh_tokenize(input, ' ')};
+    auto act {sh_tokenize(input, " ")};
     for (auto& word : act) {
         expand_word(word);
     }
@@ -102,7 +102,7 @@ TEST(ExpansionIntegrationTest, preservesTextInQuotes) {
 TEST(ExpansionIntegrationTest, emptyInputGivesNoArgs) {
     const std::string input {""};
     const args_container exp {};
-    auto act {sh_tokenize(input, ' ')};
+    auto act {sh_tokenize(input, " ")};
     for (auto& word : act) {
         expand_word(word);
     }
@@ -112,7 +112,7 @@ TEST(ExpansionIntegrationTest, emptyInputGivesNoArgs) {
 TEST(ExpansionIntegrationTest, emptyQuotesGiveEmptyArgs) {
     const std::string input {"ls ''   '' \"    \" 'word' "};
     const args_container exp {"ls", "''", "''", "\"    \"", "'word'"};
-    auto act {sh_tokenize(input, ' ')};
+    auto act {sh_tokenize(input, " ")};
     for (auto& word : act) {
         expand_word(word);
     }

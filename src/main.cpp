@@ -16,15 +16,16 @@
 
 namespace fs = std::filesystem;
 
+const std::string_view DELIMETER {" \t"};
+
 int sh_main_loop(int argc, const char** argv) {
-    char delimeter {' '};
     std::string prompt {">>> "};
     LineReader linereader {};
     while (true) {
         const std::string line {linereader.sh_read_line(prompt)};
         if (line.empty())
             continue;
-        args_container args {sh_tokenize(line, delimeter)};
+        args_container args {sh_tokenize(line, DELIMETER)};
         std::cout << "\n";
         int status {run_compound_command(args)};
         std::cout << "\nProcess " << args[0] << " exited with code " << status << '\n';
@@ -32,8 +33,8 @@ int sh_main_loop(int argc, const char** argv) {
 }
 
 [[nodiscard]]
-int run_command(std::string_view command, char delimeter = ' ') {
-    args_container args {sh_tokenize(command, delimeter)};
+int run_command(std::string_view command) {
+    args_container args {sh_tokenize(command, DELIMETER)};
     return run_compound_command(args);
 }
 
