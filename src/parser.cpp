@@ -78,17 +78,13 @@ bool tokenizer::handle_char(char c) {
                 }
                 case sep::OR_CHAR: {
                     if (token_end == token_start) {
-                        advance();
-                        if (is_next(sep::OR_CHAR) || is_next(sep::AND_CHAR))
-                            advance();
+                        advance((is_next(sep::OR_CHAR) || is_next(sep::AND_CHAR)) ? 2 : 1);
                     }
                     return true;
                 }
                 case sep::AND_CHAR: {
                     if (token_end == token_start) {
-                        advance();
-                        if (is_next(sep::AND_CHAR))
-                            advance();
+                        advance(is_next(sep::AND_CHAR) ? 2 : 1);
                     }
                     return true;
                 }
@@ -153,7 +149,7 @@ bool tokenizer::handle_char(char c) {
     return false;
 }
 
-bool tokenizer::is_delimeter(char c) {
+bool tokenizer::is_delimeter(char c) const {
     return delimeter.find(c) != std::string::npos;
 }
 
@@ -161,8 +157,9 @@ void tokenizer::advance(int n) {
     token_end += n;
 }
 
-bool tokenizer::is_next(char c) {
-    if (token_end >= line.size())
+bool tokenizer::is_next(char c) const {
+    const auto next {token_end + 1};
+    if (next >= line.size())
         return false;
-    return line[token_end] == c;
+    return line[next] == c;
 }

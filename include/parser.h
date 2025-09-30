@@ -21,13 +21,13 @@ class tokenizer {
     size_t token_start;
     size_t token_end;
 
-    bool is_delimeter(char c);
+    bool is_delimeter(char c) const;
     /* Advances token_start until a character that is not delimerter is met,
     * then assigns token_end to token_start */
     void find_start();
     /* Advances token_end n positions */
     void advance(int n = 1);
-    bool is_next(char c);
+    bool is_next(char c) const;
     /* Tries to push a substring from token_start to token_end to the
      * resulting collection. Assigns token_start to token_end and advances
      * token_end on success*/
