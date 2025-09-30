@@ -3,39 +3,38 @@
 #include "stringsep.h"
 #include <string_view>
 
-args_container sh_tokenize(std::string_view line, std::string_view delimeter) {
-    tokenizer t;
-    return t.tokenize(line, delimeter);
-}
+tokenizer::tokenizer(std::string_view line, std::string_view delimeter) :
+    states({state::REGULAR}),
+    token_start(0),
+    token_end(0),
+    line(line),
+    delimeter(delimeter)
+{}
 
-args_container tokenizer::tokenize(std::string_view line, std::string_view delimeter) {
-    m_line = line;
-    m_delimeter = delimeter;
-    tokens.clear();
-
+args_container tokenizer::tokenize_impl() {
     do {
         find_start();
         if (token_start == std::string::npos)
             break;
 
-        while (token_end < m_line.size() && !handle_char(m_line[token_end]));
+        while (token_end < line.size() && !handle_char(line[token_end]));
 
         push_token();
-    } while (token_start <= m_line.size() && token_end <= m_line.size());
+    } while (token_start <= line.size() && token_end <= line.size());
 
     return tokens;
 }
 
 void tokenizer::find_start() {
-    token_start = m_line.find_first_not_of(m_delimeter, token_start);
+    token_start = line.find_first_not_of(delimeter, token_start);
     token_end = token_start;
 }
 
 void tokenizer::push_token() {
-    assert(token_end <= m_line.size());
+    assert(token_end <= line.size());
 
     if (token_start < token_end) {
-        tokens.push_back(std::string(m_line.substr(token_start, token_end - token_start)));
+        tokens.push_back(std::string(line.substr(token_start, token_end - token_start)));
         token_start = token_end;
         token_end++;
     }
@@ -155,7 +154,7 @@ bool tokenizer::handle_char(char c) {
 }
 
 bool tokenizer::is_delimeter(char c) {
-    return m_delimeter.find(c) != std::string::npos;
+    return delimeter.find(c) != std::string::npos;
 }
 
 void tokenizer::advance(int n) {
@@ -163,7 +162,7 @@ void tokenizer::advance(int n) {
 }
 
 bool tokenizer::is_next(char c) {
-    if (token_end >= m_line.size())
+    if (token_end >= line.size())
         return false;
-    return m_line[token_end] == c;
+    return line[token_end] == c;
 }

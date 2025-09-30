@@ -13,13 +13,13 @@ class tokenizer {
         SINGLE_QUOTES,
         DOUBLE_QUOTES,
     };
-    std::stack<state> states {{state::REGULAR}};
-    std::string_view m_line;
-    std::string_view m_delimeter;
+    std::stack<state> states;
+    std::string_view line;
+    std::string_view delimeter;
     args_container tokens;
 
-    size_t token_start {};
-    size_t token_end {};
+    size_t token_start;
+    size_t token_end;
 
     bool is_delimeter(char c);
     /* Advances token_start until a character that is not delimerter is met,
@@ -36,9 +36,17 @@ class tokenizer {
      * token has ended and is ready to be pushed, false otherwise. */
     bool handle_char(char c);
 
+    /* Splits a string into tokens by characters provided in delimeter. */
+    [[nodiscard]]
+    args_container tokenize_impl();
+
+    tokenizer(std::string_view line, std::string_view delimeter);
+
 public:
     [[nodiscard]]
-    args_container tokenize(std::string_view line, std::string_view delimeter);
+    static args_container tokenize(std::string_view line, std::string_view delimeter) {
+        tokenizer t {line, delimeter};
+        return t.tokenize_impl();
+    }
 };
 
-args_container sh_tokenize(std::string_view line, std::string_view delimeter);
